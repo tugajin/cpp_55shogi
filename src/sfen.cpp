@@ -80,7 +80,6 @@ Pos pos_from_sfen(const std::string& s) {
 			num = 0;
 		}
 	}
-	Tee<<"phase2.2\n";
 	return Pos(turn, piece_side, hand);
 }
 

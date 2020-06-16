@@ -20,13 +20,13 @@ namespace bit {
 	bw_square_t g_silver_attacks;
 	bw_square_t g_gold_attacks;
 
-	std::array<bit::Bitboard, 1856 + 1> g_rook_attack;
-	std::array<bit::Bitboard, 1856 + 1> g_bishop_attack;
+	std::array<bit::Bitboard, 784 + 1> g_rook_attack;
+	std::array<bit::Bitboard, 128 + 1> g_bishop_attack;
 	std::array<int, SQUARE_SIZE> g_rook_offset;
 	std::array<int, SQUARE_SIZE> g_bishop_offset;
 
-	Bitboard gBetween[638];
-	Bitboard gBeyond[393];
+	Bitboard gBetween[62];
+	Bitboard gBeyond[73];
 
 	int gBetweenIndex[SQUARE_SIZE][SQUARE_SIZE];
 	int gBeyondIndex[SQUARE_SIZE][SQUARE_SIZE];
@@ -354,8 +354,8 @@ namespace bit {
 				}
 			}
 		}
-		Tee << "between:" << between_sq << std::endl;
-		Tee << "beyond:" << beyond_sq << std::endl;
+		//Tee << "between:" << between_sq << std::endl;
+		//Tee << "beyond:" << beyond_sq << std::endl;
 
 	}
 

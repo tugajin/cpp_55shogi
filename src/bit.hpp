@@ -148,13 +148,13 @@ namespace bit {
 
 	extern bw_square_t g_silver_attacks;
 	extern bw_square_t g_gold_attacks;
-	extern std::array<bit::Bitboard, 1856 + 1> g_bishop_attack;
-	extern std::array<bit::Bitboard, 1856 + 1> g_rook_attack;
+	extern std::array<bit::Bitboard, 784 + 1> g_rook_attack;
+	extern std::array<bit::Bitboard, 128 + 1> g_bishop_attack;
 	extern std::array<int, SQUARE_SIZE> g_bishop_offset;
 	extern std::array<int, SQUARE_SIZE> g_rook_offset;
 
-	extern Bitboard gBetween[638];
-	extern Bitboard gBeyond[393];
+	extern Bitboard gBetween[62];
+	extern Bitboard gBeyond[73];
 
 	extern int gBetweenIndex[SQUARE_SIZE][SQUARE_SIZE];
 	extern int gBeyondIndex[SQUARE_SIZE][SQUARE_SIZE];
