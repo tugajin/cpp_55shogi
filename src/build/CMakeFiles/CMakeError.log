@@ -1,0 +1,55 @@
+Determining if the pthread_create exist failed with the following output:
+Change Dir: /home/tugajin/Documents/cpp_55shogi/src/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_a9bc2/fast"
+/usr/bin/make -f CMakeFiles/cmTC_a9bc2.dir/build.make CMakeFiles/cmTC_a9bc2.dir/build
+make[1]: ディレクトリ '/home/tugajin/Documents/cpp_55shogi/src/build/CMakeFiles/CMakeTmp' に入ります
+Building CXX object CMakeFiles/cmTC_a9bc2.dir/CheckSymbolExists.cxx.o
+/usr/bin/c++     -o CMakeFiles/cmTC_a9bc2.dir/CheckSymbolExists.cxx.o -c /home/tugajin/Documents/cpp_55shogi/src/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx
+Linking CXX executable cmTC_a9bc2
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_a9bc2.dir/link.txt --verbose=1
+/usr/bin/c++       CMakeFiles/cmTC_a9bc2.dir/CheckSymbolExists.cxx.o  -o cmTC_a9bc2 
+CMakeFiles/cmTC_a9bc2.dir/CheckSymbolExists.cxx.o: 関数 `main' 内:
+CheckSymbolExists.cxx:(.text+0x1b): `pthread_create' に対する定義されていない参照です
+collect2: error: ld returned 1 exit status
+CMakeFiles/cmTC_a9bc2.dir/build.make:97: recipe for target 'cmTC_a9bc2' failed
+make[1]: *** [cmTC_a9bc2] Error 1
+make[1]: ディレクトリ '/home/tugajin/Documents/cpp_55shogi/src/build/CMakeFiles/CMakeTmp' から出ます
+Makefile:126: recipe for target 'cmTC_a9bc2/fast' failed
+make: *** [cmTC_a9bc2/fast] Error 2
+
+File /home/tugajin/Documents/cpp_55shogi/src/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx:
+/* */
+#include <pthread.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef pthread_create
+  return ((int*)(&pthread_create))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /home/tugajin/Documents/cpp_55shogi/src/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_44190/fast"
+/usr/bin/make -f CMakeFiles/cmTC_44190.dir/build.make CMakeFiles/cmTC_44190.dir/build
+make[1]: ディレクトリ '/home/tugajin/Documents/cpp_55shogi/src/build/CMakeFiles/CMakeTmp' に入ります
+Building CXX object CMakeFiles/cmTC_44190.dir/CheckFunctionExists.cxx.o
+/usr/bin/c++    -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_44190.dir/CheckFunctionExists.cxx.o -c /home/tugajin/Documents/cpp_55shogi/src/build/CMakeFiles/CheckLibraryExists/CheckFunctionExists.cxx
+Linking CXX executable cmTC_44190
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_44190.dir/link.txt --verbose=1
+/usr/bin/c++   -DCHECK_FUNCTION_EXISTS=pthread_create    CMakeFiles/cmTC_44190.dir/CheckFunctionExists.cxx.o  -o cmTC_44190 -lpthreads 
+/usr/bin/ld: -lpthreads が見つかりません
+collect2: error: ld returned 1 exit status
+CMakeFiles/cmTC_44190.dir/build.make:97: recipe for target 'cmTC_44190' failed
+make[1]: *** [cmTC_44190] Error 1
+make[1]: ディレクトリ '/home/tugajin/Documents/cpp_55shogi/src/build/CMakeFiles/CMakeTmp' から出ます
+Makefile:126: recipe for target 'cmTC_44190/fast' failed
+make: *** [cmTC_44190/fast] Error 2
+
+
