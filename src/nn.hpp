@@ -1,6 +1,8 @@
 #ifndef NN_HPP
 #define NN_HPP
 
+#ifndef NO_GPU
+
 #include "common.hpp"
 #include "hand.hpp"
 #include "pos.hpp"
@@ -301,6 +303,9 @@ TORCH_MODULE(Net);
 
 void make_feat(const Pos &pos, torch::Tensor &feat);
 MoveClassPos move_to_index(const Move mv, const Side sd);
+
+#endif
+
 void learn();
 
 namespace nn { 

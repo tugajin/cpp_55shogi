@@ -3,8 +3,9 @@
 #include "eval.hpp"
 #include <cmath>
 #include <random>
+#ifndef NO_GPU
 #include <torch/torch.h>
-
+#endif
 constexpr Score piece_value[] =
 { Score(0),  Score(100), Score(400), Score(700), Score(800), Score(500), Score(15000),Score(0),Score(0),
 			 Score(510), Score(500), Score(850),Score(900),
@@ -25,9 +26,7 @@ template<Side sd> UCTScore uct_eval(const Pos& pos) {
 	auto score = eval<sd>(pos);
 	std::random_device rd;
 	score += Score(rd() % 30);
-	auto uct_score = tanh(double(score));
-	// torch::Tensor tensor = torch::rand({ 2, 3 });
-	// std::cout << tensor << std::endl;
+	auto uct_score = tanh(double(score)/2000);
 	return uct_score;
 }
 

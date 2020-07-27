@@ -134,6 +134,10 @@ void add_drop_move(List& ml, const Pos& pos, const bit::Bitboard& target) {
 		ADD_DROP_MOVE(6)
 	case 7:
 		ADD_DROP_MOVE(7)
+	case 8:
+		ADD_DROP_MOVE(8)
+	case 9:
+		ADD_DROP_MOVE(9)
 	default:
 		assert(false);
 	}

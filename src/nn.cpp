@@ -1,3 +1,5 @@
+#ifndef NO_GPU
+
 #include "nn.hpp"
 #include "pos.hpp"
 #include "sfen.hpp"
@@ -140,6 +142,7 @@ MoveClassPos move_to_index(const Move mv, const Side sd) {
         }
     }
 }
+#endif
 
 namespace nn {
 

@@ -71,6 +71,7 @@ template<Side sd>void UCTSearcher::think() {
 			this->disp_info(loop, pv, score);
 			break;
 		}
+
 		if (loop % 5000 == 0) {
 			this->disp_info(loop, pv, score);
 		}
@@ -115,11 +116,7 @@ bool UCTSearcher::update_root_info(const uint64 loop, const Line& pv) {
 	assert(this->so_->move_ != move::MOVE_NONE);
 	//check time up
 	double elapsed = this->so_->time();
-	/*Tee << "elapsed:" << elapsed << std::endl;
-	Tee<<"lim0:"<<this->time_limits_.time_0()<<std::endl;
-	Tee<<"lim1:"<<this->time_limits_.time_1()<<std::endl;
-	Tee<<"lim2:"<<this->time_limits_.time_2()<<std::endl;
-	*/
+
 	if (this->so_->si_->type_ == LIMIT_SMART_TIME || this->so_->si_->type_ == LIMIT_TIME) {
 		if (elapsed > this->time_limits_.time_2()) {
 			return true;
@@ -391,7 +388,7 @@ template<Side sd> UCTScore UCTSearcher::uct_search(const Pos& pos, UCTNode* node
 		break;
 	}
 	if (pos.is_win()) {
-		Tee << "win\n";
+		//Tee << "win\n";
 		return 1.0f;
 	}
 	//Tee<<"select child\n";
@@ -461,12 +458,16 @@ namespace uct {
 	void test() {
 		//Pos pos = pos_from_sfen("9/4k4/9/4P4/9/9/9/9/4K4 b 2G");
 
-		//Pos pos = pos_from_sfen(START_SFEN);
-		Pos pos = pos_from_sfen("l6nl/5+P1gk/2np1S3/p1p4Pp/3P2Sp1/1PPb2P1P/P5GS1/R8/LN4bKL w GR5pnsg 1");
+		Pos pos = pos_from_sfen(START_SFEN);
+		//Pos pos = pos_from_sfen("l6nl/5+P1gk/2np1S3/p1p4Pp/3P2Sp1/1PPb2P1P/P5GS1/R8/LN4bKL w GR5pnsg 1");
 		Tee << pos << std::endl;
 		gUCT.allocate();
-		gUCT.pos_ = pos;
-		gUCT.think();
+		SearchOutput so;
+		SearchInput si;
+		si.init();
+		si.type_ = LIMIT_DEPTH;
+		start_search(so, pos, si);
+
 	}
 }
 template void UCTSearcher::expand_root<BLACK>(const Pos& pos);
