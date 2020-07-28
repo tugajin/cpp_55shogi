@@ -195,8 +195,8 @@ std::ostream& operator<<(std::ostream& os, const Pos& b) {
 		os << "WHITE" << std::endl;
 	}
 
-	std::string piece_str[] = {" ・"," 歩"," 銀"," 角"," 飛"," 金"," 玉"," と"," 全"," 馬"," 龍",
-	  " ・"," ・"," ・"," ・"," ・", " ・","v歩","v銀","v角","v飛","v金","v玉","vと","v全","v馬","v龍",};
+	std::string piece_str[] = {" ・"," 歩"," 銀"," 角"," 飛"," 金"," 玉"," ・"," ・"," と"," 全"," 馬"," 龍"
+	  ," ・"," ・"," ・", " ・","v歩","v銀","v角","v飛","v金","v玉","v・","v・","vと","v全","v馬","v龍",};
 	
 
 	os << "pos_key:" << uint64(b.pos_key()) << std::endl;

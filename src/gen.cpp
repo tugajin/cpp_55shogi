@@ -139,6 +139,7 @@ void add_drop_move(List& ml, const Pos& pos, const bit::Bitboard& target) {
 	case 9:
 		ADD_DROP_MOVE(9)
 	default:
+		Tee<<status<<std::endl;
 		assert(false);
 	}
 #undef ADD_DROP_MOVE
