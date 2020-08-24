@@ -289,7 +289,7 @@ static void usi_loop(std::vector<std::string> arg) {
 			// pos::test();
 		    //gen::test();
 			//search::test_perft();
-			search::test();
+			//search::test();
 			//mate::test();
 			uct::test();
 		}
