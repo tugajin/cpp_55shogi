@@ -9,8 +9,10 @@
 #include "sfen.hpp"
 #include "eval.hpp"
 #include "thread.hpp"
+#include "nn.hpp"
 #include <cmath>
 #include <iostream>
+#include <torch/torch.h>
 
 UCTSearcher gUCT;
 
@@ -47,22 +49,31 @@ void UCTSearcher::think() {
 }
 
 void UCTSearcher::enqueue_node(const Pos& pos, UCTNode* node) {
-	auto obj = std::make_pair(pos, node);
+	torch::Tensor feat = 
+		torch::zeros({ SQUARE_SIZE , POS_END_SIZE, SQUARE_SIZE }, 
+					torch::TensorOptions().dtype(torch::kFloat));
+	make_feat(pos, feat);
+	auto obj = std::make_pair(feat, node);
 	this->node_queue_.push(obj);
 }
 
 void UCTSearcher::dequeue_node() {
-	auto empty = std::queue<std::pair<Pos, UCTNode * >>();
+	auto empty = std::queue<std::pair<torch::Tensor, UCTNode * >>();
 	std::swap(this->node_queue_, empty);
 }
 
 void UCTSearcher::eval_node() {
 	
 	Tee<<"queue pos"<<this->node_queue_.size()<<"\n";
+	torch::Tensor all_feat = torch::zeros({ this->node_queue_.size(), SQUARE_SIZE , POS_END_SIZE, SQUARE_SIZE }, torch::TensorOptions().dtype(torch::kFloat));            
+	std::vector<UCTNode *> node_list;
+	auto i = 0;
 	while(!this->node_queue_.empty()) {
 		auto pair_info = this->node_queue_.front();
-		auto pos = pair_info.first;
-		//Tee<<pos<<std::endl;
+		auto feat = pair_info.first;
+		auto node = pair_info.second;
+		all_feat[i++] = feat;
+		node_list.emplace_back(node);
 		this->node_queue_.pop();
 	}
 }
