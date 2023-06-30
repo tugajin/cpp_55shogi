@@ -21,6 +21,7 @@ public:
         return this->curr - this->moves;
     }
     void add(const Move m) {
+        ASSERT(len() < MAX_LIST_SIZE);
         (*this->curr++) = m;
     }
     Move* begin() {
@@ -35,7 +36,7 @@ public:
     std::string str() const {
         std::string s;
         REP(i, this->len()) {
-            s += to_string(i) + ":" + move_str(this->moves[i]) +"\n";
+            s += padding_str(to_string(i),3) + ":" + move_str(this->moves[i]) +"\n";
         }
         return s;
     }

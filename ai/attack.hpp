@@ -191,16 +191,17 @@ namespace attack {
 // };
 
 inline bool is_attacked(const game::Position &pos, const Square sq, const Color turn) {
-#define CHECK_ATTACK(dir, flag) do{\
-        const auto from = sq + (dir);\
+#define CHECK_ATTACK(inc, flag) do{\
+        const auto from = sq + (inc);\
         const auto color_piece = pos.square(from);\
         if ((color_piece & (flag)) == (flag)) {\
             return true;\
         }\
 } while(false)
 
-#define CHECK_SLIDER_ATTACK(dir, flag) do{\
-        const auto from = sq + (dir);\
+#define CHECK_SLIDER_ATTACK(inc, flag) do{\
+        const auto dir = inc_to_dir(inc);\
+        const auto from = pos.neighbor(sq, dir);\
         const auto color_piece = pos.square(from);\
         if ((color_piece & (flag)) == (flag)) {\
             return true;\
@@ -208,6 +209,7 @@ inline bool is_attacked(const game::Position &pos, const Square sq, const Color 
 } while(false)
 
     const auto color_flag = (turn == BLACK) ? BLACK_FLAG : WHITE_FLAG;
+
     CHECK_ATTACK(INC_DOWN, UP_FLAG | color_flag);
     CHECK_ATTACK(INC_UP, DOWN_FLAG | color_flag);
     CHECK_ATTACK(INC_LEFT, RIGHT_FLAG | color_flag);
@@ -217,7 +219,17 @@ inline bool is_attacked(const game::Position &pos, const Square sq, const Color 
     CHECK_ATTACK(INC_RIGHTUP, LEFTDOWN_FLAG | color_flag);
     CHECK_ATTACK(INC_RIGHTDOWN, LEFTUP_FLAG | color_flag);
 
+    CHECK_SLIDER_ATTACK(INC_DOWN, SLIDER_UP_FLAG | color_flag);
+    CHECK_SLIDER_ATTACK(INC_UP, SLIDER_DOWN_FLAG | color_flag);
+    CHECK_SLIDER_ATTACK(INC_LEFT, SLIDER_RIGHT_FLAG | color_flag);
+    CHECK_SLIDER_ATTACK(INC_RIGHT, SLIDER_LEFT_FLAG | color_flag);
+    CHECK_SLIDER_ATTACK(INC_LEFTUP, SLIDER_RIGHTDOWN_FLAG | color_flag);
+    CHECK_SLIDER_ATTACK(INC_LEFTDOWN, SLIDER_RIGHTUP_FLAG | color_flag);
+    CHECK_SLIDER_ATTACK(INC_RIGHTUP, SLIDER_LEFTDOWN_FLAG | color_flag);
+    CHECK_SLIDER_ATTACK(INC_RIGHTDOWN, SLIDER_LEFTUP_FLAG | color_flag);
+
 #undef CHECK_ATTACK
+#undef CHECK_SLIDER_ATTACK
 
     return false;
 }
@@ -231,6 +243,9 @@ inline bool can_move(const ColorPiece p, const int move_flag) {
 }
 
 inline void test_attack() {
+    auto pos = sfen::sfen("rb1g1/2s1k/4p/PSB2/KG2R b - 1");
+    Tee<<pos<<std::endl;
+    Tee<<pos.is_win()<<std::endl;
 }
 }
 namespace game {

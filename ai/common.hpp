@@ -345,7 +345,9 @@ inline int sq_to_index(const Square sq) {
 }
 
 inline constexpr Hand inc_hand(const Hand h, const Piece p) {
-    ASSERT(p == PAWN || p == SILVER || p == GOLD || p == BISHOP || p == ROOK);
+    ASSERT2(p == PAWN || p == SILVER || p == GOLD || p == BISHOP || p == ROOK,{
+        Tee<<p<<std::endl;
+    });
     return static_cast<Hand>(h + HAND_INC[p]);
 }
 
@@ -436,6 +438,11 @@ inline bool sq_is_ok(const Square sq) {
     return false;
 }
 
+inline bool sq_is_prom(const Square sq, const Color c) {
+    const auto rank = sq_rank(sq);
+    return (c == BLACK) ? (rank == RANK_1) : (rank == RANK_5);
+}
+
 inline bool piece_is_ok(const Piece p) {
     return (p == PAWN    || 
             p == SILVER  || 
@@ -466,7 +473,7 @@ inline bool move_is_ok(const Move m) {
 }
 
 inline bool hand_is_ok(const Hand h) {
-    static constexpr Hand HAND_MAX = static_cast<Hand>(219);
+    static constexpr Hand HAND_MAX = static_cast<Hand>(18724);
     return h >= HAND_NONE && h <= HAND_MAX;
 }
 
@@ -514,10 +521,12 @@ inline std::string move_str(const Move m) {
     if (m == MOVE_NONE) {
         ret += "MOVE_NONE";
     } else if (move_is_drop(m)) {
-        ret +="打:" + sq_str(move_to(m))+":"+piece_str(move_piece(m));
+        ret +="★ " + sq_str(move_to(m))+piece_str(move_piece(m));
     } else {
-        ret +="from:"+ sq_str(move_from(m)) + " to:" + sq_str(move_to(m)) +" prom:"+to_string(move_is_prom(m));
+        ret +=sq_str(move_from(m)) + sq_str(move_to(m));
+        if (move_is_prom(m)) { ret += "成"; } 
     }
+    ret += "(" + to_string(static_cast<int>(m)) + ")";
     return ret;
 }
 
@@ -583,10 +592,12 @@ static constexpr Square DIR_INC[8] = { INC_UP, INC_LEFTUP, INC_LEFT, INC_LEFTDOW
 static constexpr int INC_DIR[INC_MAX] = { 1, 0, 7, -1, -1, -1, -1, -1, 2, -1, 6, -1, -1, -1, -1, -1, 3, 4, 5 };
 
 inline Square dir_to_inc(const int dir) {
+    ASSERT2(dir >=0 && dir < 8,{ Tee<<dir<<std::endl; });
     return DIR_INC[dir];
 }
 
 inline int inc_to_dir(const Square inc) {
+    ASSERT2(inc+INC_OFFSET >=0 && inc+INC_OFFSET < INC_MAX,{ Tee<<inc<<std::endl; });
     return INC_DIR[inc+INC_OFFSET];
 }
 

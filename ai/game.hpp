@@ -14,6 +14,8 @@ namespace sfen{
 std::string out_sfen(const game::Position &pos);
 }
 
+bool move_is_ok(const Move m, const game::Position &pos); 
+
 namespace game {
 
 class Neighbor {
@@ -68,7 +70,7 @@ public:
     void evacuate(const Square sq) {
         REP(d, 4) {
             const auto up = this->neighbor(sq,d);
-            const auto dn = this->neighbor(sq,d);
+            const auto dn = this->neighbor(sq,d+4);
             ASSERT(up>=0);
             ASSERT(up<SQ_END);
             ASSERT(dn>=0);
@@ -80,44 +82,96 @@ public:
     void occupy(const ColorPiece square[], const Square sq) {
         ASSERT(sq_is_ok(sq));
         const Square vec[] = { INC_UP, INC_LEFTUP, INC_LEFT, INC_LEFTDOWN };
+        //Tee<<"occupy:"<<sq<<std::endl;
         REP(d, 4) {
             const auto v = vec[d];
             auto up = sq;
+            //Tee<<"check dir:"<<v<<std::endl;
             while(square[up+=v] == COLOR_EMPTY){
                 ASSERT2(sq_is_ok(up),{
                     Tee<<up<<std::endl;
                 });
             }
+            //Tee<<"up:"<<up<<std::endl;
             const auto dn = this->neighbor(up,d+4);
+            //Tee<<"dn:"<<dn<<std::endl;
             ASSERT(up>=0);
             ASSERT(up<SQ_END);
             ASSERT(dn>=0);
             ASSERT(dn<SQ_END);
+            //Tee<<"up d+4 :" << sq<<std::endl;
+            //Tee<<"dn d:" << sq<<std::endl;
+            //Tee<<"sq d+4 :" << dn<<std::endl;
+            //Tee<<"sq d :" << up<<std::endl;
             this->dir[up][d+4] = sq;
             this->dir[dn][d] = sq;
             this->dir[sq][d+4] = dn;
             this->dir[sq][d] = up;
         }
+        ASSERT2(this->is_ok(square),{
+            REP(i, SQ_END) {
+                Tee<<i<<":"<<square[i]<<std::endl;
+            }
+            this->dump();
+        });
     }
     bool is_ok(const ColorPiece square[]) const {
-        return true;
         auto f = [&](const Square sq, const Square d, const Square neighbor) {
             Square sq2 = sq;
             do { sq2 += d; } while(square[sq2] == COLOR_EMPTY);
-            return neighbor == sq2;
+            if (neighbor == sq2) {
+                return true;
+            }
+            Tee<<"not eq error neighbor\n";
+            Tee<<"sq:"<<sq<<std::endl;
+            Tee<<"inc:"<<d<<std::endl;
+            Tee<<"nei:"<<neighbor<<std::endl;
+            Tee<<"debug_nei:"<<sq2<<std::endl;
+            return false;
         };
         for(auto *p = SQUARE_INDEX; *p != SQ_WALL; ++p) {
             const auto sq = *p;
+            if (square[sq] == COLOR_EMPTY) {
+                continue;
+            }
             if (!f(sq, INC_UP, this->dir[sq][0])
-            &&  !f(sq, INC_LEFTUP, this->dir[sq][1])
-            &&  !f(sq, INC_LEFT, this->dir[sq][2])
-            &&  !f(sq, INC_LEFTDOWN, this->dir[sq][3])
-            &&  !f(sq, INC_DOWN, this->dir[sq][4])
-            &&  !f(sq, INC_RIGHTDOWN, this->dir[sq][5])
-            &&  !f(sq, INC_RIGHT, this->dir[sq][6])
-            &&  !f(sq, INC_RIGHTUP, this->dir[sq][7])
+            ||  !f(sq, INC_LEFTUP, this->dir[sq][1])
+            ||  !f(sq, INC_LEFT, this->dir[sq][2])
+            ||  !f(sq, INC_LEFTDOWN, this->dir[sq][3])
+            ||  !f(sq, INC_DOWN, this->dir[sq][4])
+            ||  !f(sq, INC_RIGHTDOWN, this->dir[sq][5])
+            ||  !f(sq, INC_RIGHT, this->dir[sq][6])
+            ||  !f(sq, INC_RIGHTUP, this->dir[sq][7])
             ) {
+                Tee<<"nei error\n";
+                Tee<<sq<<std::endl;
                 return false;    
+            }
+            REP(i, 8) {
+                if (this->dir[sq][i] == sq) {
+                    Tee<<"nei error2\n";
+                    Tee<<sq<<std::endl;
+                    Tee<<i<<std::endl;
+                    return false;
+                }
+                const auto inc = dir_to_inc(i);
+                if (inc > 0) {
+                    if (sq >= this->dir[sq][i]) {
+                        Tee<<"nei error3\n";
+                        Tee<<sq<<std::endl;
+                        Tee<<this->dir[sq][i]<<std::endl;
+                        Tee<<i<<std::endl;
+                        return false;
+                    }
+                } else if (inc < 0) {
+                    if (sq <= this->dir[sq][i]) {
+                        Tee<<"nei error4\n";
+                        Tee<<sq<<std::endl;
+                        Tee<<this->dir[sq][i]<<std::endl;
+                        Tee<<i<<std::endl;
+                        return false;
+                    }
+                }
             }
         }
         return true;
@@ -199,6 +253,12 @@ public:
     int ply() const {
         return this->ply_;
     }
+    Square neighbor(const Square sq, const int dir) const {
+        return this->neighbor_.neighbor(sq, dir);
+    }
+    bool exists_pawn(const Color c, const File f) const {
+        return this->exist_pawn_[c][f];
+    }
     Position mirror() const;
     Position rotate() const;
 private:
@@ -207,6 +267,7 @@ private:
 
     Square piece_list_[COLOR_SIZE][PIECE_END][2];//駒がどのsqに存在しているか?
     int piece_list_size_[COLOR_SIZE][PIECE_END];//piece_listのどこまで使ったか？
+    bool exist_pawn_[COLOR_SIZE][FILE_SIZE];//2歩用の配列
     Hand hand_[COLOR_SIZE];
     Key history_[1024];
     Neighbor neighbor_;
@@ -220,13 +281,16 @@ private:
 
 Position::Position(const ColorPiece pieces[], const Hand hand[], const Color turn) {
    REP(i, SQ_END) {
-        this->square_[i] = COLOR_WALL;
+        this->square_[i] = sq_is_ok(static_cast<Square>(i)) ? COLOR_EMPTY : COLOR_WALL;
         this->piece_list_index_[i] = -1;
     }
     REP_COLOR(col) {
         REP_PIECE(pc) {
             this->piece_list_[col][pc][0] = this->piece_list_[col][pc][1] = SQ_WALL;
             this->piece_list_size_[col][pc] = 0;
+        }
+        REP_FILE(file) {
+            this->exist_pawn_[col][file] = false;
         }
     }
     REP(i, 1024) {
@@ -245,6 +309,10 @@ Position::Position(const ColorPiece pieces[], const Hand hand[], const Color tur
     this->hand_[WHITE] = hand[WHITE];
     this->turn_ = turn;
     this->history_[this->ply_] = hash::hash_key(*this);
+    ASSERT2(this->is_ok(),{
+        Tee<<*this<<std::endl;
+        this->dump();
+    })
 }
 
 void Position::quiet_move_piece(const Square from, const Square to, const ColorPiece color_piece) {
@@ -258,6 +326,10 @@ void Position::quiet_move_piece(const Square from, const Square to, const ColorP
     this->piece_list_index_[to] = this->piece_list_index_[from];
     this->piece_list_[col][pc][this->piece_list_index_[from]] = to;
     this->piece_list_index_[from] = -1;
+    if (pc == PAWN) {
+        this->exist_pawn_[col][sq_file(from)] = false;
+        this->exist_pawn_[col][sq_file(to)] = true;
+    }
 }
 
 void Position::put_piece(const Square sq, const ColorPiece color_piece) {
@@ -269,6 +341,9 @@ void Position::put_piece(const Square sq, const ColorPiece color_piece) {
     this->piece_list_index_[sq] = this->piece_list_size_[col][pc];
     this->piece_list_[col][pc][this->piece_list_size_[col][pc]] = sq;
     ++this->piece_list_size_[col][pc];
+    if (pc == PAWN) {
+        this->exist_pawn_[col][sq_file(sq)] = true;
+    }
 }
 
 void Position::remove_piece(const Square sq, const ColorPiece color_piece) {
@@ -283,6 +358,9 @@ void Position::remove_piece(const Square sq, const ColorPiece color_piece) {
 
     this->square_[sq] = COLOR_EMPTY;
     this->piece_list_index_[sq] = -1;
+    if (pc == PAWN) {
+        this->exist_pawn_[col][sq_file(sq)] = false;
+    }
 }
 
 std::string Position::str() const {
@@ -399,6 +477,28 @@ bool Position::is_ok() const {
             }
         }
     }
+    REP_FILE(file) {
+        bool found_pawn[COLOR_SIZE] = {false, false};
+        REP_RANK(rank) {
+            const auto sq = ::square(file, rank);
+            const auto color_piece = this->square(sq);
+            const auto piece = to_piece(color_piece);
+            const auto color = piece_color(color_piece);
+            if (piece == PAWN) {
+                found_pawn[color] = true;
+            }
+        }
+        if (found_pawn[BLACK] != this->exists_pawn(BLACK, file)) {
+#if DEBUG
+                Tee<<"exists pawn error"<<file<<"\n";
+#endif
+        }
+        if (found_pawn[WHITE] != this->exists_pawn(WHITE, file)) {
+#if DEBUG
+                Tee<<"exists pawn error2"<<file<<"\n";
+#endif
+        }
+    }
     if (!hand_is_ok(this->hand_[BLACK])) {
 #if DEBUG
         Tee<<"error black hand\n";
@@ -415,13 +515,20 @@ bool Position::is_ok() const {
 #if DEBUG
         Tee<<"error neighbor\n";
 #endif
+        return false;
     }
+
     return true;
 }
 
 Position Position::next(const Move action) const {
     ASSERT2(this->is_ok(),{
         Tee<<"prev_next\n";
+        Tee<<this->str()<<std::endl;
+        Tee<<move_str(action)<<std::endl;
+    });
+    ASSERT2(move_is_ok(action, *this), {
+        Tee<< "prev move error\n";
         Tee<<this->str()<<std::endl;
         Tee<<move_str(action)<<std::endl;
     });
@@ -440,7 +547,6 @@ Position Position::next(const Move action) const {
         auto dst_color_piece = src_color_piece;
         const auto captured_color_piece = next_pos.square(to);
         next_pos.neighbor_.evacuate(from);
-
         if (captured_color_piece != COLOR_EMPTY) {
             next_pos.remove_piece(to, captured_color_piece);
             next_pos.hand_[turn] = inc_hand(next_pos.hand_[turn], unprom(to_piece(captured_color_piece)));
@@ -467,7 +573,7 @@ Position Position::next(const Move action) const {
         Tee<<"after next\n";
         Tee<<next_pos<<std::endl;
         Tee<<move_str(action)<<std::endl;
-        this->dump();
+        next_pos.dump();
     });
     return next_pos;
 }
@@ -503,6 +609,8 @@ void Position::dump() const {
     }
     Tee<<"black_hand:"<<static_cast<int>(this->hand_[BLACK])<<std::endl;
     Tee<<"white_hand:"<<static_cast<int>(this->hand_[WHITE])<<std::endl;
+    Tee<<"neighbor\n";
+    this->neighbor_.dump();
 }
 
 Position Position::mirror() const {
@@ -516,6 +624,8 @@ Position Position::mirror() const {
     }
     pos.ply_ = 0;
     pos.history_[0] = hash::hash_key(pos);
+    //FIXME 2歩のところがだめ
+    ASSERT(pos.is_ok());
     return pos;
 }
 
@@ -538,6 +648,7 @@ Position Position::rotate() const {
 
     pos.ply_ = 0;
     pos.history_[0] = hash::hash_key(pos);  
+    ASSERT(pos.is_ok());
     return pos;
 }
 
@@ -909,4 +1020,60 @@ void test_common() {
 #endif
 }
 }
+bool move_is_ok(const Move m, const game::Position &pos) {
+    const auto to = move_to(m);
+    if (!sq_is_ok(to)) {
+        return false;
+    }
+    if (move_is_drop(m)) {
+        const auto piece = move_piece(m);
+        if (!piece_is_ok(piece)) {
+            return false;
+        }
+        if (piece == KING || piece == PPAWN || piece == PSILVER || piece == PBISHOP || piece == PROOK) {
+            return false;
+        }
+        if (pos.square(to) != COLOR_EMPTY) {
+            return false;
+        }
+        if (piece == PAWN) {
+            const auto rank = sq_rank(to);
+            if (pos.turn() == BLACK && rank == RANK_1) {
+                return false;
+            }
+            if (pos.turn() == WHITE && rank == RANK_5) {
+                return false;
+            }
+            if (pos.exists_pawn(pos.turn(), sq_file(to))) {
+                return false;
+            }
+        }
+    } else {
+        const auto from = move_from(m);
+        const auto prom = move_is_prom(m);
+        const auto color_piece = pos.square(from);
+        const auto color = piece_color(color_piece);
+        const auto piece = to_piece(color_piece);
+        if (!sq_is_ok(from)) {
+            return false;
+        }
+        if (color != pos.turn()) {
+            return false;
+        }
+        if (prom) {
+            if (piece == GOLD || piece == KING || piece == PPAWN || piece == PSILVER || piece == PBISHOP || piece == PROOK) {
+                return false;
+            }
+        } 
+        const auto cap = pos.square(to);
+        if (cap != COLOR_EMPTY) {
+            const auto cap_color = piece_color(cap);
+            if (cap_color == pos.turn()) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 #endif

@@ -1,12 +1,12 @@
 #include "game.hpp"
 #include "sfen.hpp"
 #include "movelist.hpp"
-//#include "movelegal.hpp"
+#include "movelegal.hpp"
 #include "util.hpp"
 // #include "search.hpp"
 // #include "selfplay.hpp"
 // #include "ubfm.hpp"
-//#include "attack.hpp"
+#include "attack.hpp"
 // #include "matesearch.hpp"
 #include "hash.hpp"
 // #include "nn.hpp"
@@ -50,8 +50,8 @@ int main(int argc, char **argv){
     check_mode();
     init_table();
     hash::init();
-    sfen::test_sfen();
-    game::test_common();
+    //attack::test_attack();
+    gen::test_gen3();
     //gen::test_gen3();
     //oracle::g_oracle.load();
     //model::g_gpu_model[0].load_model(0);
