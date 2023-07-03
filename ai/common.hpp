@@ -93,9 +93,10 @@ enum Square : int {
     INC_LEFTDOWN = 7,
     INC_RIGHTDOWN = 9,
     INC_NONE = 0,
-    INC_OFFSET = INC_RIGHTDOWN,
-    INC_MAX = 1 + INC_OFFSET * 2,
 };
+
+static constexpr int INC_OFFSET = INC_RIGHTDOWN;
+static constexpr int INC_MAX = 1 + INC_OFFSET * 2;
 
 enum Piece : int {
     PROM_FLAG = 1 << 3,
@@ -243,18 +244,12 @@ constexpr inline Square SQUARE_INDEX[] = {
 
 extern int g_piece_color_piece[COLOR_SIZE][PIECE_END];
 
-constexpr inline int DELTA_OFFSET = 56;
-constexpr inline int DELTA_NB = DELTA_OFFSET * 2 + 1;
+static constexpr inline int DELTA_OFFSET = 36;
+static constexpr inline int DELTA_NB = DELTA_OFFSET * 2 + 1;
 
-extern Square g_delta_inc_all[DELTA_NB];
 extern Square g_delta_inc_line[DELTA_NB];
-extern ColorPiece g_delta_mask[DELTA_NB];
-
-inline Square delta_inc_all(const Square delta) {
-    ASSERT(delta + DELTA_OFFSET >= 0);
-    ASSERT(delta + DELTA_OFFSET < DELTA_NB);
-    return g_delta_inc_all[DELTA_OFFSET + delta];
-}
+extern ColorPiece g_delta_flag_all[DELTA_NB];
+extern ColorPiece g_delta_flag_slider[DELTA_NB];
 
 inline Square delta_inc_line(const Square delta) {
     ASSERT(delta + DELTA_OFFSET >= 0);
@@ -262,14 +257,22 @@ inline Square delta_inc_line(const Square delta) {
     return g_delta_inc_line[DELTA_OFFSET + delta];
 }
 
-inline ColorPiece delta_mask(const Square delta) {
+inline ColorPiece delta_flag_all(const Square delta) {
     ASSERT2(delta + DELTA_OFFSET >= 0,{ Tee<<delta<<std::endl; });
     ASSERT2(delta + DELTA_OFFSET < DELTA_NB,{Tee<<delta<<std::endl;});
-    return g_delta_mask[DELTA_OFFSET + delta];
+    return g_delta_flag_all[DELTA_OFFSET + delta];
+}
+inline ColorPiece delta_flag_slider(const Square delta) {
+    ASSERT2(delta + DELTA_OFFSET >= 0,{ Tee<<delta<<std::endl; });
+    ASSERT2(delta + DELTA_OFFSET < DELTA_NB,{Tee<<delta<<std::endl;});
+    return g_delta_flag_slider[DELTA_OFFSET + delta];
+}
+inline bool pseudo_attack(const ColorPiece p, const Square delta) {
+    return (delta_flag_all(delta) & p) != 0;
 }
 
-inline bool pseudo_attack(const ColorPiece p, const Square delta) {
-    return (delta_mask(delta) & p) != 0;
+inline bool pseudo_slider_attack(const ColorPiece p, const Square delta) {
+    return (delta_flag_slider(delta) & p) != 0;
 }
 
 inline std::string color_str(const Color c) {
@@ -429,6 +432,11 @@ inline ColorPiece prom(const ColorPiece cp) {
     return color_piece(ppc, color);
 }
 
+inline bool color_is_eq(const Color c, const ColorPiece cp) {
+    static constexpr ColorPiece flag[] = { BLACK_FLAG, WHITE_FLAG };
+    return (flag[c] & cp) != 0;
+}
+
 inline bool sq_is_ok(const Square sq) {
     for(auto *p = SQUARE_INDEX; *p != SQ_WALL; ++p) {
         if (*p == sq) {
@@ -511,6 +519,9 @@ inline std::string hand_str(const Hand h) {
 inline std::string sq_str(const Square sq) {
     static const std::string file_str[] = {"５","４","３","２","１"};
     static const std::string rank_str[] = {"一","二","三","四","五"};
+    if (!sq_is_ok(sq)) {
+        return "error_sq:" + to_string(int(sq));
+    }
     const auto file = sq_file(sq);
     const auto rank = sq_rank(sq);
     return file_str[file] + rank_str[rank];
@@ -591,12 +602,12 @@ inline ColorPiece piece_no_color_piece(const int index) {
 static constexpr Square DIR_INC[8] = { INC_UP, INC_LEFTUP, INC_LEFT, INC_LEFTDOWN, INC_DOWN, INC_RIGHTDOWN, INC_RIGHT, INC_RIGHTUP };
 static constexpr int INC_DIR[INC_MAX] = { 1, 0, 7, -1, -1, -1, -1, -1, 2, -1, 6, -1, -1, -1, -1, -1, 3, 4, 5 };
 
-inline Square dir_to_inc(const int dir) {
+inline constexpr Square dir_to_inc(const int dir) {
     ASSERT2(dir >=0 && dir < 8,{ Tee<<dir<<std::endl; });
     return DIR_INC[dir];
 }
 
-inline int inc_to_dir(const Square inc) {
+inline constexpr int inc_to_dir(const Square inc) {
     ASSERT2(inc+INC_OFFSET >=0 && inc+INC_OFFSET < INC_MAX,{ Tee<<inc<<std::endl; });
     return INC_DIR[inc+INC_OFFSET];
 }
@@ -611,58 +622,5 @@ void check_mode() {
 #endif
 }
 
-void init_table() {
-
-
-    REP(i, 16) {
-        g_piece_color_piece[BLACK][i] = g_piece_color_piece[WHITE][i] = -1;
-    }
-
-    g_piece_color_piece[BLACK][PAWN] = BLACK_PAWN;
-    g_piece_color_piece[BLACK][SILVER] = BLACK_SILVER;
-    g_piece_color_piece[BLACK][BISHOP] = BLACK_BISHOP;
-    g_piece_color_piece[BLACK][ROOK] = BLACK_ROOK;
-    g_piece_color_piece[BLACK][GOLD] = BLACK_GOLD;
-    g_piece_color_piece[BLACK][KING] = BLACK_KING;
-    g_piece_color_piece[BLACK][PPAWN] = BLACK_PPAWN;
-    g_piece_color_piece[BLACK][PSILVER] = BLACK_PSILVER;
-    g_piece_color_piece[BLACK][PBISHOP] = BLACK_PBISHOP;
-    g_piece_color_piece[BLACK][PROOK] = BLACK_PROOK;
-
-   g_piece_color_piece[WHITE][PAWN] = WHITE_PAWN;
-    g_piece_color_piece[WHITE][SILVER] = WHITE_SILVER;
-    g_piece_color_piece[WHITE][BISHOP] = WHITE_BISHOP;
-    g_piece_color_piece[WHITE][ROOK] = WHITE_ROOK;
-    g_piece_color_piece[WHITE][GOLD] = WHITE_GOLD;
-    g_piece_color_piece[WHITE][KING] = WHITE_KING;
-    g_piece_color_piece[WHITE][PPAWN] = WHITE_PPAWN;
-    g_piece_color_piece[WHITE][PSILVER] = WHITE_PSILVER;
-    g_piece_color_piece[WHITE][PBISHOP] = WHITE_PBISHOP;
-    g_piece_color_piece[WHITE][PROOK] = WHITE_PROOK;
-
-    REP(i, DELTA_NB) {
-        g_delta_inc_all[i] = INC_NONE;
-        g_delta_mask[i] = COLOR_EMPTY;
-    }
-    g_delta_mask[DELTA_OFFSET + INC_DOWN] = DOWN_FLAG;
-    g_delta_mask[DELTA_OFFSET + INC_UP] = UP_FLAG;
-    g_delta_mask[DELTA_OFFSET + INC_LEFT] = LEFT_FLAG;
-    g_delta_mask[DELTA_OFFSET + INC_RIGHT] = RIGHT_FLAG;
-    g_delta_mask[DELTA_OFFSET + INC_LEFTUP] = LEFTUP_FLAG;
-    g_delta_mask[DELTA_OFFSET + INC_LEFTDOWN] = LEFTDOWN_FLAG;
-    g_delta_mask[DELTA_OFFSET + INC_RIGHTUP] = RIGHTUP_FLAG;
-    g_delta_mask[DELTA_OFFSET + INC_RIGHTDOWN] = RIGHTDOWN_FLAG;
-
-    g_delta_inc_all[DELTA_OFFSET + INC_DOWN] = INC_DOWN;
-    g_delta_inc_all[DELTA_OFFSET + INC_UP] = INC_UP;
-    g_delta_inc_all[DELTA_OFFSET + INC_LEFT] = INC_LEFT;
-    g_delta_inc_all[DELTA_OFFSET + INC_RIGHT] = INC_RIGHT;
-    g_delta_inc_all[DELTA_OFFSET + INC_LEFTUP] = INC_LEFTUP;
-    g_delta_inc_all[DELTA_OFFSET + INC_LEFTDOWN] = INC_LEFTDOWN;
-    g_delta_inc_all[DELTA_OFFSET + INC_RIGHTUP] = INC_RIGHTUP;
-    g_delta_inc_all[DELTA_OFFSET + INC_RIGHTDOWN] = INC_RIGHTDOWN;
-    
-
-}
 
 #endif

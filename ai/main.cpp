@@ -18,9 +18,9 @@ TeeStream Tee;
 
 int g_piece_color_piece[COLOR_SIZE][PIECE_END];
 
-Square g_delta_inc_all[DELTA_NB];
 Square g_delta_inc_line[DELTA_NB];
-ColorPiece g_delta_mask[DELTA_NB];
+ColorPiece g_delta_flag_all[DELTA_NB];
+ColorPiece g_delta_flag_slider[DELTA_NB];
 
 namespace hash {
 Key g_hash_pos[COLOR_SIZE][PIECE_END][SQ_END];
@@ -48,9 +48,9 @@ int main(int argc, char **argv){
         num = std::stoi(std::string(argv[1]));
     }
     check_mode();
-    init_table();
+    attack::init();
     hash::init();
-    //attack::test_attack();
+    attack::test_attack();
     gen::test_gen3();
     //gen::test_gen3();
     //oracle::g_oracle.load();

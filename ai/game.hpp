@@ -81,13 +81,12 @@ public:
     }
     void occupy(const ColorPiece square[], const Square sq) {
         ASSERT(sq_is_ok(sq));
-        const Square vec[] = { INC_UP, INC_LEFTUP, INC_LEFT, INC_LEFTDOWN };
         //Tee<<"occupy:"<<sq<<std::endl;
         REP(d, 4) {
-            const auto v = vec[d];
+            const auto inc = dir_to_inc(d);
             auto up = sq;
             //Tee<<"check dir:"<<v<<std::endl;
-            while(square[up+=v] == COLOR_EMPTY){
+            while(square[up+=inc] == COLOR_EMPTY){
                 ASSERT2(sq_is_ok(up),{
                     Tee<<up<<std::endl;
                 });
@@ -114,6 +113,13 @@ public:
             }
             this->dump();
         });
+    }
+    void reoccupy(const Square sq) {
+        REP(d, 4) {
+            const auto up = this->dir[sq][d];
+            const auto dn = this->dir[sq][d+4];
+            this->dir[up][d+4] = this->dir[dn][d] = sq;
+        }
     }
     bool is_ok(const ColorPiece square[]) const {
         auto f = [&](const Square sq, const Square d, const Square neighbor) {
@@ -183,7 +189,7 @@ public:
     Position() {}
     Position(const ColorPiece pieces[], const Hand hand[], const Color turn);
     void init_pos();
-    bool is_lose() const ;
+    bool is_lose();
     bool is_win() const;
     bool is_draw(int max_num = 4) const {
         if (this->ply_ >= 400) {
@@ -207,7 +213,7 @@ public:
         }
         return false;
     }
-    bool is_done() const {
+    bool is_done() {
         return (this->is_lose() || this->is_draw());
     }
     Color turn() const {
@@ -261,6 +267,8 @@ public:
     }
     Position mirror() const;
     Position rotate() const;
+    void next_quick(const Square to, const ColorPiece cp);
+    void prev_quick(const Square to);
 private:
     ColorPiece square_[SQ_END];//どんな駒が存在しているか？
     int piece_list_index_[SQ_END];//piece_listの何番目か
@@ -576,6 +584,33 @@ Position Position::next(const Move action) const {
         next_pos.dump();
     });
     return next_pos;
+}
+
+void Position::next_quick(const Square to, const ColorPiece cp) {
+    ASSERT2(this->square_[to] == COLOR_EMPTY,{
+        Tee<<"next quick error\n";
+        Tee<<this->square_[to]<<std::endl;
+    });
+    this->square_[to] = cp;
+    this->neighbor_.occupy(this->square_, to);
+    ASSERT2(this->neighbor_.is_ok(this->square_),{
+        Tee<<"next quick error\n";
+        Tee<<this->str()<<std::endl;
+        Tee<<to<<":"<<cp<<std::endl;
+        this->neighbor_.dump();
+    });
+}
+
+void Position::prev_quick(const Square to) {
+    ASSERT(this->square_[to] != COLOR_EMPTY);
+    this->square_[to] = COLOR_EMPTY;
+    this->neighbor_.evacuate(to);
+    ASSERT2(this->neighbor_.is_ok(this->square_),{
+        Tee<<"next quick error\n";
+        Tee<<this->str()<<std::endl;
+        Tee<<to<<":"<<to<<std::endl;
+        this->neighbor_.dump();
+    });
 }
 
 void Position::dump() const {
@@ -1069,6 +1104,10 @@ bool move_is_ok(const Move m, const game::Position &pos) {
         if (cap != COLOR_EMPTY) {
             const auto cap_color = piece_color(cap);
             if (cap_color == pos.turn()) {
+                return false;
+            }
+            const auto piece = to_piece(cap);
+            if (piece == KING) {
                 return false;
             }
         }

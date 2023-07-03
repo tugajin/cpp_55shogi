@@ -12,7 +12,17 @@
 //#include "matesearch.hpp"
 
 namespace gen {
-template<bool is_exists = false> bool legal_moves(const game::Position &pos, movelist::MoveList &ml) {
+
+
+template<bool is_exists = false> bool legal_moves(game::Position &pos, movelist::MoveList &ml) {
+    ASSERT2(pos.is_ok(),{
+        Tee<<"pos error\n";
+        Tee<<pos<<std::endl;
+    });
+    ASSERT2(!pos.is_win(),{
+        Tee<<"pos is win\n";
+        Tee<<pos<<std::endl;
+    });
     auto result = false;
     result = pos_moves<is_exists>(pos, ml);
     result |= drop_moves<is_exists>(pos, ml);
@@ -83,12 +93,12 @@ template<bool is_exists = false> bool legal_moves(const game::Position &pos, mov
     return result;
 }
 
-bool has_legal(const game::Position &pos) {
+bool has_legal(game::Position &pos) {
     movelist::MoveList dummy;
     return legal_moves<true>(pos, dummy);
 }
 
-int num_legal(const game::Position &pos) {
+int num_legal(game::Position &pos) {
     movelist::MoveList dummy;
     legal_moves(pos, dummy);
     return dummy.len();
@@ -122,7 +132,6 @@ void test_gen3() {
             ASSERT2(pos.is_ok(),{
                 Tee<<pos<<std::endl;
             });
-
             if (key_dict.count(hash::hash_key(pos)) == 0){
                 key_dict.insert({hash::hash_key(pos), 1});
             }
@@ -130,11 +139,11 @@ void test_gen3() {
                 draw_num++;
                 break;
             }
-            if (pos.is_lose()) {
+            if (pos.is_win()) {
                 mate_num++;
                 break;
             }
-            if (pos.is_win()) {
+            if (pos.is_lose()) {
                 mate_num++;
                 break;
             }
@@ -155,7 +164,7 @@ void test_gen3() {
 
 }
 namespace game {
-bool Position::is_lose() const {
+bool Position::is_lose() {
     return !gen::has_legal(*this);
 }
 }
