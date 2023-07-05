@@ -7,7 +7,7 @@
 
 namespace gen {
 
-template<bool is_exists = false, bool add_drops> bool add_moves_to(const game::Position &pos, movelist::MoveList &ml, const Square to) {
+template<bool is_exists = false, bool add_drops> bool add_moves_to(game::Position &pos, movelist::MoveList &ml, const Square to) {
     const auto me = pos.turn();
     const auto king_sq = pos.king_sq(me);
 #define ADD_MOVE(f) do {\
@@ -93,8 +93,11 @@ template<bool is_exists = false, bool add_drops> bool add_moves_to(const game::P
     });
     const auto hand = pos.hand(me);
     const auto rank_first = (me == BLACK) ? RANK_1 : RANK_5;
-    //打ち歩詰め判定は多分不要
-    if (has_piece(hand, PAWN) && (sq_rank(to) != rank_first) && !pos.exists_pawn(me,sq_file(to))) {
+    if (has_piece(hand, PAWN) 
+        && (sq_rank(to) != rank_first)
+        && !pos.exists_pawn(me,sq_file(to))
+        && !is_mate_with_pawn_drop(to,pos)
+     ) {
         if (is_exists) { return true; }
         ml.add(move(to,PAWN));
     }
@@ -117,7 +120,7 @@ template<bool is_exists = false, bool add_drops> bool add_moves_to(const game::P
     return false;
 }
 
-template<bool is_exists = false> bool evasion_moves(const game::Position &pos, movelist::MoveList &ml) {
+template<bool is_exists = false> bool evasion_moves(game::Position &pos, movelist::MoveList &ml) {
     const auto me = pos.turn();
     const auto opp = change_turn(me);
     const auto king_sq = pos.king_sq(me);
