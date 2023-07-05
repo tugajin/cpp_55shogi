@@ -134,6 +134,7 @@ void test_gen2(std::string sfen) {
 }
 
 void test_gen() {
+    test_gen2("2sk1/1P3/rBK2/S3+r/3g1 w pbg - 66");
     test_gen2("2k1p/2Grr/p3B/1S1+s1/K2gb w - 116");
     test_gen2("2SB1/5/2b1r/PRs1k/Kgg2 b p - 91");
     test_gen2("1b2+R/B1Ps1/PrG1k/3g1/K1S2 w - 50");
