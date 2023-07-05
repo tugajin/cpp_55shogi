@@ -244,7 +244,7 @@ constexpr inline Square SQUARE_INDEX[] = {
 
 extern int g_piece_color_piece[COLOR_SIZE][PIECE_END];
 
-static constexpr inline int DELTA_OFFSET = 36;
+static constexpr inline int DELTA_OFFSET = 56;
 static constexpr inline int DELTA_NB = DELTA_OFFSET * 2 + 1;
 
 extern Square g_delta_inc_line[DELTA_NB];
@@ -437,6 +437,26 @@ inline bool color_is_eq(const Color c, const ColorPiece cp) {
     return (flag[c] & cp) != 0;
 }
 
+inline bool can_prom(const ColorPiece cp) {
+    switch (cp) {
+        case BLACK_GOLD:
+        case BLACK_KING:
+        case BLACK_PPAWN:
+        case BLACK_PSILVER:
+        case BLACK_PBISHOP:
+        case BLACK_PROOK:
+        case WHITE_GOLD:
+        case WHITE_KING:
+        case WHITE_PPAWN:
+        case WHITE_PSILVER:
+        case WHITE_PBISHOP:
+        case WHITE_PROOK:
+            return true;
+        default:
+            return false;
+    }
+}
+
 inline bool sq_is_ok(const Square sq) {
     for(auto *p = SQUARE_INDEX; *p != SQ_WALL; ++p) {
         if (*p == sq) {
@@ -608,6 +628,7 @@ inline constexpr Square dir_to_inc(const int dir) {
 }
 
 inline constexpr int inc_to_dir(const Square inc) {
+    ASSERT(inc != INC_NONE);
     ASSERT2(inc+INC_OFFSET >=0 && inc+INC_OFFSET < INC_MAX,{ Tee<<inc<<std::endl; });
     return INC_DIR[inc+INC_OFFSET];
 }

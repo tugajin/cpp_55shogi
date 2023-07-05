@@ -7,8 +7,9 @@
 
 namespace gen {
 
-template<bool is_exists = false> bool pos_moves(const game::Position &pos, movelist::MoveList &ml) {
+template<bool is_exists = false, bool is_legal = false> bool pos_moves(const game::Position &pos, movelist::MoveList &ml) {
     const auto turn = pos.turn();
+    const auto opp = change_turn(turn);
     const auto move_flag = (turn == BLACK) ? (BLACK_FLAG | COLOR_WALL_FLAG) : (WHITE_FLAG | COLOR_WALL_FLAG);
     {
         const auto size = pos.piece_list_size(turn, PAWN);
@@ -16,6 +17,7 @@ template<bool is_exists = false> bool pos_moves(const game::Position &pos, movel
             const auto from = pos.piece_list(turn, PAWN, index);
             const auto to = (turn == BLACK) ? from + INC_UP : from + INC_DOWN;
             if (attack::can_move(pos.square(to), move_flag)) {
+                if (is_legal && attack::is_discover(from,to,turn,pos)) { continue; }
                 if (is_exists) { return true; }
                 ml.add(move(from, to, sq_is_prom(to, turn)));
             }
@@ -25,6 +27,7 @@ template<bool is_exists = false> bool pos_moves(const game::Position &pos, movel
 #define ADD_MOVE_PROM(dir) do {\
             const auto to = from + (dir);\
             if (attack::can_move(pos.square(to), move_flag)) {\
+                if (is_legal && attack::is_discover(from,to,turn,pos)) { continue; }\
                 if (is_exists) { return true; }\
                 if (sq_is_prom(to, turn) || sq_is_prom(from, turn)) {\
                     ml.add(move(from, to, true));\
@@ -35,6 +38,7 @@ template<bool is_exists = false> bool pos_moves(const game::Position &pos, movel
 #define ADD_MOVE(dir) do {\
             const auto to = from + (dir);\
             if (attack::can_move(pos.square(to), move_flag)) {\
+                if (is_legal && attack::is_discover(from,to,turn,pos)) { continue; }\
                 if (is_exists) { return true; }\
                 ml.add(move(from, to));\
             }\
@@ -109,28 +113,40 @@ template<bool is_exists = false> bool pos_moves(const game::Position &pos, movel
             }
         }
     }
-
+#undef ADD_MOVE_PROM
     {
+#define ADD_MOVE_KING(dir) do {\
+            const auto to = from + (dir);\
+            if (attack::can_move(pos.square(to), move_flag)) {\
+                if (is_legal && attack::is_attacked(pos,to,opp)) { continue; }\
+                if (is_exists) { return true; }\
+                ml.add(move(from, to));\
+            }\
+}while(false)
         const auto from = pos.king_sq(turn);
-        ADD_MOVE(INC_UP);
-        ADD_MOVE(INC_LEFTUP);
-        ADD_MOVE(INC_LEFT);
-        ADD_MOVE(INC_LEFTDOWN);
-        ADD_MOVE(INC_DOWN);
-        ADD_MOVE(INC_RIGHTDOWN);
-        ADD_MOVE(INC_RIGHT);
-        ADD_MOVE(INC_RIGHTUP);
+        ADD_MOVE_KING(INC_UP);
+        ADD_MOVE_KING(INC_LEFTUP);
+        ADD_MOVE_KING(INC_LEFT);
+        ADD_MOVE_KING(INC_LEFTDOWN);
+        ADD_MOVE_KING(INC_DOWN);
+        ADD_MOVE_KING(INC_RIGHTDOWN);
+        ADD_MOVE_KING(INC_RIGHT);
+        ADD_MOVE_KING(INC_RIGHTUP);
     }
+#undef ADD_MOVE_KING
+
 #define ADD_MOVE_SLIER_PROM(dir) do {\
             const auto inc = dir_to_inc(dir);\
             const auto neighbor_sq = pos.neighbor(from, dir);\
             auto to = from + inc;\
             for (; to != neighbor_sq; to += inc) {\
+                if (is_legal && attack::is_discover(from,to,turn,pos)) { continue; }\
                 if (is_exists) { return true; }\
                 ASSERT2(to >= 0 && to < SQ_END, { Tee<<"error add_move_slider\n"; });\
                 ml.add(move(from,to,(sq_is_prom(to, turn) || sq_is_prom(from, turn))));\
             }\
             if (attack::can_move(pos.square(to),move_flag)) {\
+                if (is_legal && attack::is_discover(from,to,turn,pos)) { continue; }\
                 if (is_exists) { return true; }\
                 ASSERT2(to >= 0 && to < SQ_END, { Tee<<"error add_move_slider2\n"; });\
                 ml.add(move(from,to,(sq_is_prom(to, turn) || sq_is_prom(from, turn))));\
@@ -141,11 +157,13 @@ template<bool is_exists = false> bool pos_moves(const game::Position &pos, movel
             const auto neighbor_sq = pos.neighbor(from, dir);\
             auto to = from + inc;\
             for (; to != neighbor_sq; to += inc) {\
+                if (is_legal && attack::is_discover(from,to,turn,pos)) { continue; }\
                 if (is_exists) { return true; }\
                 ASSERT2(to >= 0 && to < SQ_END, { Tee<<"error add_move_slider\n"; });\
                 ml.add(move(from,to));\
             }\
             if (attack::can_move(pos.square(to),move_flag)) {\
+                if (is_legal && attack::is_discover(from,to,turn,pos)) { continue; }\
                 if (is_exists) { return true; }\
                 ASSERT2(to >= 0 && to < SQ_END, { Tee<<"error add_move_slider2\n"; });\
                 ml.add(move(from,to));\
@@ -203,10 +221,11 @@ template<bool is_exists = false> bool pos_moves(const game::Position &pos, movel
             ADD_MOVE(INC_RIGHTDOWN);
         }
     }
-#undef ADD_MOVE
-#undef ADD_MOVE_PROM
+
 #undef ADD_MOVE_SLIER_PROM
 #undef ADD_MOVE_SLIER
+#undef ADD_MOVE
+
     return false;
 }
 

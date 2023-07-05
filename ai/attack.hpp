@@ -5,15 +5,15 @@
 
 namespace attack {
 
-/*class Checker {
+class Checker {
 public:
     int num;
-    Square checker_from[2];
-    Square checker_dir[2];
-    Bitboard self_pinner;
-    Bitboard enemy_pinner;
+    Square from[2];
+    Square inc[2];
+    //Bitboard self_pinner;
+    //Bitboard enemy_pinner;
     Checker(const game::Position &pos) {
-        this->from[0] = this->dir[0] = SQ_WALL;
+        this->from[0] = this->inc[0] = this->from[1] = this->inc[1] = SQ_END;
         this->num = 0;
         const auto turn = pos.turn();
         const auto opp = change_turn(turn);
@@ -25,11 +25,21 @@ public:
         const auto color_piece = pos.square(from);\
         if ((color_piece & (flag)) == (flag)) {\
             this->from[this->num] = from;\
-            this->dir[this->num] = (d);\
+            this->inc[this->num] = INC_NONE;\
             ++this->num;\
+            goto slider_phase;\
         }\
 } while(false)
-
+#define SET_SLIDER_ATTACK(sq_inc, flag) do{\
+        const auto from = pos.neighbor(sq, inc_to_dir(sq_inc));\
+        const auto color_piece = pos.square(from);\
+        if ((color_piece & (flag)) == (flag)) {\
+            this->from[this->num] = from;\
+            this->inc[this->num] = (sq_inc);\
+            ++this->num;\
+            if (this->num == 2) { goto end; }\
+        }\
+} while(false)
         SET_ATTACK(INC_DOWN, UP_FLAG | color_flag);
         SET_ATTACK(INC_UP, DOWN_FLAG | color_flag);
         SET_ATTACK(INC_LEFT, RIGHT_FLAG | color_flag);
@@ -38,10 +48,21 @@ public:
         SET_ATTACK(INC_LEFTDOWN, RIGHTUP_FLAG | color_flag);
         SET_ATTACK(INC_RIGHTUP, LEFTDOWN_FLAG | color_flag);
         SET_ATTACK(INC_RIGHTDOWN, LEFTUP_FLAG | color_flag);
-
+slider_phase:
+    // TODO ここはPieceListを見たほうが速い
+        SET_SLIDER_ATTACK(INC_UP, SLIDER_DOWN_FLAG | color_flag);
+        SET_SLIDER_ATTACK(INC_LEFTUP, SLIDER_RIGHTDOWN_FLAG | color_flag);
+        SET_SLIDER_ATTACK(INC_LEFT, SLIDER_RIGHT_FLAG | color_flag);
+        SET_SLIDER_ATTACK(INC_LEFTDOWN, SLIDER_RIGHTUP_FLAG | color_flag);
+        SET_SLIDER_ATTACK(INC_DOWN, SLIDER_UP_FLAG | color_flag);
+        SET_SLIDER_ATTACK(INC_RIGHTDOWN, SLIDER_LEFTUP_FLAG | color_flag);
+        SET_SLIDER_ATTACK(INC_RIGHT, SLIDER_LEFT_FLAG | color_flag);
+        SET_SLIDER_ATTACK(INC_RIGHTUP, SLIDER_LEFTDOWN_FLAG | color_flag);
+end:;
 #undef SET_ATTACK
+#undef SET_SLIDER_ATTACK
     }
-};*/
+};
 
 
 // class Attacker {
@@ -229,7 +250,8 @@ public:
 //     }
 // };
 
-inline bool is_attacked(const game::Position &pos, const Square sq, const Color turn) {
+inline bool is_attacked_debug(const game::Position &pos, const Square sq, const Color turn) {
+
 #define CHECK_ATTACK(inc, flag) do{\
         const auto from = sq + (inc);\
         const auto color_piece = pos.square(from);\
@@ -238,8 +260,9 @@ inline bool is_attacked(const game::Position &pos, const Square sq, const Color 
         }\
 } while(false)
 
-#define CHECK_SLIDER_ATTACK(dir, flag) do{\
-        const auto from = pos.neighbor(sq, dir);\
+#define CHECK_SLIDER_ATTACK(inc, flag) do{\
+        auto from = sq + (inc);\
+        while (pos.square(from) == COLOR_EMPTY) { from += inc; };\
         const auto color_piece = pos.square(from);\
         if ((color_piece & (flag)) == (flag)) {\
             return true;\
@@ -257,22 +280,81 @@ inline bool is_attacked(const game::Position &pos, const Square sq, const Color 
     CHECK_ATTACK(INC_RIGHTUP, LEFTDOWN_FLAG | color_flag);
     CHECK_ATTACK(INC_RIGHTDOWN, LEFTUP_FLAG | color_flag);
 
-    // TODO ここはPieceListを見たほうが速い
-    CHECK_SLIDER_ATTACK(0, SLIDER_DOWN_FLAG | color_flag);
-    CHECK_SLIDER_ATTACK(1, SLIDER_RIGHTDOWN_FLAG | color_flag);
-    CHECK_SLIDER_ATTACK(2, SLIDER_RIGHT_FLAG | color_flag);
-    CHECK_SLIDER_ATTACK(3, SLIDER_RIGHTUP_FLAG | color_flag);
-    CHECK_SLIDER_ATTACK(4, SLIDER_UP_FLAG | color_flag);
-    CHECK_SLIDER_ATTACK(5, SLIDER_LEFTUP_FLAG | color_flag);
-    CHECK_SLIDER_ATTACK(6, SLIDER_LEFT_FLAG | color_flag);
-    CHECK_SLIDER_ATTACK(7, SLIDER_LEFTDOWN_FLAG | color_flag);
+    CHECK_SLIDER_ATTACK(INC_DOWN, SLIDER_UP_FLAG | color_flag);
+    CHECK_SLIDER_ATTACK(INC_UP, SLIDER_DOWN_FLAG | color_flag);
+    CHECK_SLIDER_ATTACK(INC_LEFT, SLIDER_RIGHT_FLAG | color_flag);
+    CHECK_SLIDER_ATTACK(INC_RIGHT, SLIDER_LEFT_FLAG | color_flag);
+    CHECK_SLIDER_ATTACK(INC_LEFTUP, SLIDER_RIGHTDOWN_FLAG | color_flag);
+    CHECK_SLIDER_ATTACK(INC_LEFTDOWN, SLIDER_RIGHTUP_FLAG | color_flag);
+    CHECK_SLIDER_ATTACK(INC_RIGHTDOWN, SLIDER_LEFTUP_FLAG | color_flag);
+    CHECK_SLIDER_ATTACK(INC_RIGHTUP, SLIDER_LEFTDOWN_FLAG | color_flag);
 
 #undef CHECK_ATTACK
 #undef CHECK_SLIDER_ATTACK
 
     return false;
 }
+inline bool is_attacked(const game::Position &pos, const Square sq, const Color turn) {
 
+#define CHECK_ATTACK(inc, flag) do{\
+        const auto from = sq + (inc);\
+        const auto color_piece = pos.square(from);\
+        if ((color_piece & (flag)) == (flag)) {\
+            ASSERT(is_attacked_debug(pos,sq,turn));\
+            return true;\
+        }\
+} while(false)
+
+    const auto color_flag = (turn == BLACK) ? BLACK_FLAG : WHITE_FLAG;
+
+    CHECK_ATTACK(INC_DOWN, UP_FLAG | color_flag);
+    CHECK_ATTACK(INC_UP, DOWN_FLAG | color_flag);
+    CHECK_ATTACK(INC_LEFT, RIGHT_FLAG | color_flag);
+    CHECK_ATTACK(INC_RIGHT, LEFT_FLAG | color_flag);
+    CHECK_ATTACK(INC_LEFTUP, RIGHTDOWN_FLAG | color_flag);
+    CHECK_ATTACK(INC_LEFTDOWN, RIGHTUP_FLAG | color_flag);
+    CHECK_ATTACK(INC_RIGHTUP, LEFTDOWN_FLAG | color_flag);
+    CHECK_ATTACK(INC_RIGHTDOWN, LEFTUP_FLAG | color_flag);
+
+#define CHECK_SLIDER_ATTACK(p)    do {\
+        const auto size = pos.piece_list_size(turn, p);\
+        REP(index, size) {\
+            const auto from = pos.piece_list(turn, p, index);\
+            const auto cp = color_piece(p, turn);\
+            const auto inc = delta_inc_line(sq - from);\
+            if (inc == INC_NONE) { continue; }\
+            const auto dir = inc_to_dir(inc);\
+            const auto neighbor_sq = pos.neighbor(from, dir);\
+            const auto neighbor_delta = neighbor_sq - from;\
+            /*Tee<<"check_dir:"<<dir<<std::endl;\
+            Tee<<"check_piece:"<<p<<std::endl;\
+            Tee<<"from:"<<from<<std::endl;\
+            Tee<<"sq:"<<sq<<std::endl;\
+            Tee<<"nei:"<<neighbor_sq<<std::endl;\
+            Tee<<"delta:"<<sq - from <<std::endl;\
+            Tee<<"nei_delta:"<<neighbor_delta<<std::endl;\
+            Tee<<"preudo_attack:"<<pseudo_slider_attack(cp, neighbor_delta)<<std::endl;\
+            Tee<<"delta_flag:"<<delta_flag_slider(neighbor_delta)<<std::endl;*/\
+            if (pseudo_slider_attack(cp, neighbor_delta) && (std::abs(sq - from) <= std::abs(neighbor_delta))) {\
+                return true;\
+            }\
+        }\
+    }while (0)
+    CHECK_SLIDER_ATTACK(BISHOP);
+    CHECK_SLIDER_ATTACK(ROOK);
+    CHECK_SLIDER_ATTACK(PBISHOP);
+    CHECK_SLIDER_ATTACK(PROOK);
+#undef CHECK_ATTACK
+#undef CHECK_SLIDER_ATTACK
+    ASSERT2(!is_attacked_debug(pos,sq,turn),{
+        Tee<<"is_attacked_debug not eq error\n";
+        Tee<<pos<<std::endl;
+        pos.dump();
+        Tee<<sq_str(sq)<<std::endl;
+
+    });
+    return false;
+}
 inline bool in_checked(const game::Position &pos) {
     return is_attacked(pos,pos.king_sq(pos.turn()),change_turn(pos.turn()));
 }
@@ -283,10 +365,17 @@ inline bool can_move(const ColorPiece p, const int move_flag) {
 
 inline bool is_pinned(const Square sq, const Color me, const game::Position &pos) {
     const auto king_sq = pos.king_sq(me);
-    const auto inc = delta_inc_line(sq - king_sq);
-    if (inc == INC_NONE) { return false; }
-    const auto dir = inc_to_dir(inc);
-    const auto slider_sq = pos.neighbor(sq, dir);
+    // 玉とsqの間に何もないか？
+    const auto inc_king = delta_inc_line(king_sq - sq);
+    if (inc_king == INC_NONE) { return false; }
+    const auto dir_king = inc_to_dir(inc_king);
+    const auto pseudo_king_sq = pos.neighbor(sq,dir_king);
+    if (pseudo_king_sq != king_sq) { return false; }
+
+    // sqと飛び駒の間に何もないか？
+    const auto inc_slider = static_cast<Square>(-inc_king);
+    const auto dir_slider = inc_to_dir(inc_slider);
+    const auto slider_sq = pos.neighbor(sq, dir_slider);
     const auto slider_cp = pos.square(slider_sq);
     const auto opp = change_turn(me);
     return color_is_eq(opp,slider_cp) && pseudo_slider_attack(slider_cp, sq - slider_sq);
@@ -299,7 +388,6 @@ inline bool is_discover(const Square from, const Square to, const Color turn, co
     }
     return false;
 }
-
 
 void init() {
 
@@ -343,7 +431,8 @@ void init() {
         const auto inc = dir_to_inc(dir);
         auto delta = inc;
         g_delta_flag_all[DELTA_OFFSET + delta] = flags[dir];
-        REP(num,4){
+        //壁までいくことがあるので、5回実施
+        REP(num, 5){
             g_delta_flag_all[DELTA_OFFSET + delta] = static_cast<ColorPiece>(
                                                     static_cast<int>(g_delta_flag_all[DELTA_OFFSET + delta]) | 
                                                     static_cast<int>(slider_flags[dir])
@@ -385,8 +474,8 @@ bool is_mate_with_pawn_drop(const Square drop_sq, game::Position &pos) {
     //capture attacker
     REP(dir, 8) {
         const auto from = pos.neighbor(drop_sq, dir);
+        if (from == king_sq) {continue;}
         const auto from_cp = pos.square(from);
-        if (from_cp == BLACK_KING || from_cp == WHITE_KING) { continue; }
         if (color_is_eq(opp, from_cp) 
         && pseudo_attack(from_cp, drop_sq - from) 
         && !attack::is_discover(from, drop_sq, opp, pos)) {
@@ -401,21 +490,10 @@ bool is_mate_with_pawn_drop(const Square drop_sq, game::Position &pos) {
     REP(dir, 8) {
         const auto to = king_sq + dir_to_inc(dir);
         if (!attack::can_move(pos.square(to), move_flag)) { continue; }
-        if (pos.square(to) == COLOR_EMPTY) {
-            pos.next_quick(to, king);
-            if (!attack::is_attacked(pos, to, me)) {
-                pos.prev_quick(to);
-                pos.next_quick(king_sq, king);
-                pos.prev_quick(drop_sq);
-                return false;
-            }
-            pos.prev_quick(to);
-        } else {
-            if (!attack::is_attacked(pos, to, me)) {
-                pos.next_quick(king_sq, king);
-                pos.prev_quick(drop_sq);
-                return false;
-            }
+        if (!attack::is_attacked(pos, to, me)) {
+            pos.next_quick(king_sq, king);
+            pos.prev_quick(drop_sq);
+            return false;
         }
     }
     pos.next_quick(king_sq, king);
@@ -431,6 +509,47 @@ bool is_mate_with_pawn_drop(const Square drop_sq, game::Position &pos) {
 }
 namespace attack {
 inline void test_attack() {
+    {
+        auto pos = sfen::sfen("2k1p/2Grr/p3B/1S1+s1/K2gb w - 116");
+        Tee<<pos<<std::endl;
+        ASSERT(attack::is_pinned(SQ_22,WHITE,pos));
+    }
+    {
+        auto pos = sfen::sfen("r2gk/4p/s1S2/PK2b/1G1BR b - 1");
+        Tee<<pos<<std::endl;
+        ASSERT(!attack::is_attacked(pos,SQ_34,WHITE));
+    }
+    {
+        auto pos = sfen::hirate();
+        pos = pos.next(move(SQ_15,SQ_12));
+        Tee<<pos<<std::endl;
+        ASSERT(attack::is_attacked(pos,SQ_22,BLACK));
+    }
+    {
+        auto pos = sfen::sfen("r1s1k/b1g1B/5/P4/KGSR1 w P - 6");
+        Tee<<pos<<std::endl;
+        ASSERT(attack::is_attacked(pos,SQ_22,WHITE));
+    }
+    {
+        auto pos = sfen::sfen("rbs1k/B2gp/5/P4/KGS1R b - 3");
+        Tee<<pos<<std::endl;
+        ASSERT(!attack::is_pinned(SQ_52,BLACK,pos));
+    }
+    {
+        auto pos = sfen::sfen("rbsgk/4p/5/P4/KGSBR b - 1");
+        Tee<<pos<<std::endl;
+        ASSERT(!attack::is_attacked(pos,SQ_44,WHITE));
+    }
+    {
+        auto pos = sfen::sfen("1rkpS/R4/5/5/K4 b P - 1");
+        Tee<<pos<<std::endl;
+        ASSERT(gen::is_mate_with_pawn_drop(SQ_32,pos));
+    }
+    {
+        auto pos = sfen::sfen("4k/4r/5/4P/4K b p - 1");
+        Tee<<pos<<std::endl;
+        ASSERT(is_pinned(SQ_14,BLACK,pos));
+    }
     {
         auto pos = sfen::sfen("1G2k/4p/r1g1s/5/bKB+sR w p - 28");
         Tee<<pos<<std::endl;
@@ -456,11 +575,6 @@ inline void test_attack() {
         auto pos = sfen::sfen("1b1gk/r1S2/1rG1p/2s2/K2B1 w p - 1");
         Tee<<pos<<std::endl;
         ASSERT(pos.is_win());
-    }
-    {
-        auto pos = sfen::sfen("1rkpS/R4/5/5/K4 b P - 1");
-        Tee<<pos<<std::endl;
-        ASSERT(gen::is_mate_with_pawn_drop(SQ_32,pos));
     }
     {
         auto pos = sfen::sfen("rb1gS/1s2R/3k1/PS3/K1GB1 b P - 7");

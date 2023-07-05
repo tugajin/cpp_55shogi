@@ -114,12 +114,30 @@ public:
             this->dump();
         });
     }
-    void reoccupy(const Square sq) {
+    void occupy(const ColorPiece square[], const Square sq, Square info[]) const {
+        ASSERT(sq_is_ok(sq));
         REP(d, 4) {
-            const auto up = this->dir[sq][d];
-            const auto dn = this->dir[sq][d+4];
-            this->dir[up][d+4] = this->dir[dn][d] = sq;
+            const auto inc = dir_to_inc(d);
+            auto up = sq;
+            while(square[up+=inc] == COLOR_EMPTY){
+                ASSERT2(sq_is_ok(up),{
+                    Tee<<up<<std::endl;
+                });
+            }
+            const auto dn = this->neighbor(up,d+4);
+            ASSERT(up>=0);
+            ASSERT(up<SQ_END);
+            ASSERT(dn>=0);
+            ASSERT(dn<SQ_END);
+            info[d+4] = dn;
+            info[d] = up;
         }
+        ASSERT2(this->is_ok(square),{
+            REP(i, SQ_END) {
+                Tee<<i<<":"<<square[i]<<std::endl;
+            }
+            this->dump();
+        });
     }
     bool is_ok(const ColorPiece square[]) const {
         auto f = [&](const Square sq, const Square d, const Square neighbor) {
@@ -260,7 +278,32 @@ public:
         return this->ply_;
     }
     Square neighbor(const Square sq, const int dir) const {
+        ASSERT2(this->square(sq) != COLOR_EMPTY ,{
+            Tee<<"neighbor empty check\n";
+            Tee<<this->str()<<std::endl;
+            Tee<<sq_str(sq)<<std::endl;
+        });
         return this->neighbor_.neighbor(sq, dir);
+    }
+    void occupy(const Square sq, Square info[]) const {
+        if (this->square(sq) == COLOR_EMPTY) {
+            this->occupy_empty(sq,info);
+        } else {
+            this->occupy_fill(sq,info);
+        }
+    }
+    void occupy_fill(const Square sq, Square info[]) const {
+        info[0] = this->neighbor(sq,0);
+        info[1] = this->neighbor(sq,1);
+        info[2] = this->neighbor(sq,2);
+        info[3] = this->neighbor(sq,3);
+        info[4] = this->neighbor(sq,4);
+        info[5] = this->neighbor(sq,5);
+        info[6] = this->neighbor(sq,6);
+        info[7] = this->neighbor(sq,7);
+    }
+    void occupy_empty(const Square sq, Square info[]) const {
+        this->neighbor_.occupy(this->square_,sq,info);
     }
     bool exists_pawn(const Color c, const File f) const {
         return this->exist_pawn_[c][f];

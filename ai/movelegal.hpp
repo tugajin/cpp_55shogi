@@ -6,7 +6,7 @@
 #include "movegen.hpp"
 #include "movedrop.hpp"
 #include <unordered_map>
-//#include "moveevasion.hpp"
+#include "moveevasion.hpp"
 //#include "movecheck.hpp"
 //#include "movecapture.hpp"
 //#include "matesearch.hpp"
@@ -24,22 +24,13 @@ template<bool is_exists = false> bool legal_moves(game::Position &pos, movelist:
         Tee<<pos<<std::endl;
     });
     auto result = false;
-    result = pos_moves<is_exists>(pos, ml);
-    result |= drop_moves<is_exists>(pos, ml);
-/*    if (attack::in_checked(pos)) {
+    if (attack::in_checked(pos)) {
         result = evasion_moves<is_exists>(pos, ml);
-#if DEBUG
+#if 1
     if (!is_exists) {
         movelist::MoveList all_ml;
-        pos_moves(pos, all_ml);
-        REP(i, ml.len()) {
-            auto next = pos.next(ml[i]);
-            ASSERT2(!next.is_win(),{
-                Tee<<pos<<std::endl;
-                Tee<<next<<std::endl;
-                Tee<<ml<<std::endl;
-            });
-        }
+        pos_moves<false,false>(pos, all_ml);
+        drop_moves<false>(pos, all_ml);
         movelist::MoveList tmp;
         REP(i, all_ml.len()) {
             auto next = pos.next(all_ml[i]);
@@ -49,12 +40,14 @@ template<bool is_exists = false> bool legal_moves(game::Position &pos, movelist:
         }
         ASSERT2(tmp.len() == ml.len(),{
             Tee<<pos<<std::endl;
+            Tee<<"correct:\n";
             Tee<<tmp<<std::endl;
+            Tee<<"incorrect:\n";
             Tee<<ml<<std::endl;
         })
     } else {
         movelist::MoveList tmp;
-        evasion_moves(pos, tmp);
+        evasion_moves<false>(pos, tmp);
         ASSERT2(result == (tmp.len() !=0),{
             Tee<<pos<<std::endl;
             Tee<<tmp<<std::endl;
@@ -63,33 +56,60 @@ template<bool is_exists = false> bool legal_moves(game::Position &pos, movelist:
     }
 #endif
     } else {
-        result = pos_moves<is_exists>(pos, ml);
+        result = pos_moves<is_exists,true>(pos, ml);
         result |= drop_moves<is_exists>(pos, ml);
-#if DEBUG
-        movelist::MoveList check_ml;
-        pos_check_moves(pos, check_ml);
-        drop_check_moves(pos, check_ml);
-    if (!is_exists) {
-        REP(i, ml.len()) {
-            auto next = pos.next(ml[i]);
-            if(attack::in_checked(next)) {
-                if (!check_ml.contain(ml[i])) {
-                    Tee<<pos<<std::endl;
-                    Tee<<check_ml<<std::endl;
-                    Tee<<move_str(ml[i])<<std::endl;
-                    ASSERT(false);
+#if 1
+        if (!is_exists) {
+            movelist::MoveList all_ml;
+            pos_moves<false,false>(pos, all_ml);
+            drop_moves<false>(pos, all_ml);
+            movelist::MoveList tmp;
+            REP(i, all_ml.len()) {
+                auto next = pos.next(all_ml[i]);
+                if (!next.is_win()) {
+                    tmp.add(all_ml[i]);
                 }
             }
+            ASSERT2(tmp.len() == ml.len(),{
+                Tee<<pos<<std::endl;
+                Tee<<"correct:\n";
+                Tee<<tmp<<std::endl;
+                Tee<<"incorrect:\n";
+                Tee<<ml<<std::endl;
+            });
+        } else {
+            movelist::MoveList tmp;
+            pos_moves<false,true>(pos, tmp);
+            drop_moves<false>(pos, tmp);
+            ASSERT2(result == (tmp.len() !=0),{
+                Tee<<pos<<std::endl;
+                Tee<<tmp<<std::endl;
+                Tee<<result<<std::endl;
+            }); 
         }
-    } else {
-        movelist::MoveList tmp;
-        pos_moves(pos, tmp);
-        drop_moves(pos, tmp);
-        ASSERT(result == (tmp.len() !=0));
-    }
+        // movelist::MoveList check_ml;
+        // pos_check_moves(pos, check_ml);
+        // drop_check_moves(pos, check_ml);
+        // if (!is_exists) {
+        //     REP(i, ml.len()) {
+        //         auto next = pos.next(ml[i]);
+        //         if(attack::in_checked(next)) {
+        //             if (!check_ml.contain(ml[i])) {
+        //                 Tee<<pos<<std::endl;
+        //                 Tee<<check_ml<<std::endl;
+        //                 Tee<<move_str(ml[i])<<std::endl;
+        //                 ASSERT(false);
+        //             }
+        //         }
+        //     }
+        // } else {
+        //     movelist::MoveList tmp;
+        //     pos_moves(pos, tmp);
+        //     drop_moves(pos, tmp);
+        //     ASSERT(result == (tmp.len() !=0));
+        // }
 #endif
     }
-    */
     return result;
 }
 
@@ -109,16 +129,30 @@ void test_gen2(std::string sfen) {
    Tee<<pos<<std::endl;
    movelist::MoveList ml;
    legal_moves(pos,ml);
+   Tee<<pos.is_lose()<<std::endl;
    Tee<<ml<<std::endl;
 }
 
 void test_gen() {
+    test_gen2("2k1p/2Grr/p3B/1S1+s1/K2gb w - 116");
+    test_gen2("2SB1/5/2b1r/PRs1k/Kgg2 b p - 91");
+    test_gen2("1b2+R/B1Ps1/PrG1k/3g1/K1S2 w - 50");
+    test_gen2("4k/1rS2/3gp/R1p1b/1GKB1 b s - 27");
+    test_gen2("s3k/4p/K1rbS/5/1G1B1 b PGr - 25");
+    test_gen2("r2gk/4p/s1S2/PK2b/1G1BR b - 7");
+    test_gen2("gk1g1/1rSRp/P2b1/4b/Ks3 w - 50");
+    test_gen2("r3k/b2sp/Kg1G1/P4/2SBR b - 9");
+    test_gen2("+SK2k/1G3/3+b1/RPp1+r/1Sg2 b b - 61");
+    test_gen2("r1sg1/3k1/K3p/P2bR/1GS+b1 b - 11");
+    test_gen2("1bsg1/3k1/4R/rSP2/K2B1 b Gp - 13");
+    test_gen2("r1sgk/b3R/1B3/P4/KGS2 w P - 4");
     test_gen2("rb1gk/1s2p/5/P3B/KGS1R b - 3");
     test_gen2(sfen::START_SFEN);
     test_gen2("4k/5/5/5/1P2K b P - 1");
     test_gen2("p3k/5/5/5/4K w p - 1");
 
 }
+
 void test_gen3() {
 #if 1
     std::unordered_map<Key, int> key_dict;
