@@ -49,7 +49,7 @@ public:
         SET_ATTACK(INC_RIGHTUP, LEFTDOWN_FLAG | color_flag);
         SET_ATTACK(INC_RIGHTDOWN, LEFTUP_FLAG | color_flag);
 slider_phase:
-    // TODO ここはPieceListを見たほうが速い
+    // TODO is_attackedの書き方とどちらが速いのか。。。
         SET_SLIDER_ATTACK(INC_UP, SLIDER_DOWN_FLAG | color_flag);
         SET_SLIDER_ATTACK(INC_LEFTUP, SLIDER_RIGHTDOWN_FLAG | color_flag);
         SET_SLIDER_ATTACK(INC_LEFT, SLIDER_RIGHT_FLAG | color_flag);
@@ -499,10 +499,16 @@ bool is_mate_with_pawn_drop(const Square drop_sq, game::Position &pos) {
     pos.next_quick(king_sq, king);
     pos.prev_quick(drop_sq);
 
-    Tee<<"found mate with pawn drop\n";
-    Tee<<pos<<std::endl;
-    Tee<<sq_str(drop_sq)<<std::endl;
-    //exit(0);
+#if 0
+    const auto mv = move(drop_sq, PAWN);
+    auto pos2 = pos.next(mv);
+    if (!pos2.is_lose()) {
+        Tee<<"mate with pawn drop error\n";
+        Tee<<pos<<std::endl;
+        ASSERT(false);
+    }
+
+#endif
 
     return true;
 }
