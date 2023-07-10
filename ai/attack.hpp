@@ -5,6 +5,49 @@
 
 namespace attack {
 
+inline Square delta_inc_line(const Square delta) {
+    ASSERT(delta + DELTA_OFFSET >= 0);
+    ASSERT(delta + DELTA_OFFSET < DELTA_NB);
+    return g_delta_inc_line[DELTA_OFFSET + delta];
+}
+
+inline ColorPiece delta_flag_all(const Square delta) {
+    ASSERT2(delta + DELTA_OFFSET >= 0,{ Tee<<delta<<std::endl; });
+    ASSERT2(delta + DELTA_OFFSET < DELTA_NB,{Tee<<delta<<std::endl;});
+    return g_delta_flag_all[DELTA_OFFSET + delta];
+}
+inline ColorPiece delta_flag_slider(const Square delta) {
+    ASSERT2(delta + DELTA_OFFSET >= 0,{ Tee<<delta<<std::endl; });
+    ASSERT2(delta + DELTA_OFFSET < DELTA_NB,{Tee<<delta<<std::endl;});
+    return g_delta_flag_slider[DELTA_OFFSET + delta];
+}
+
+inline bool line_is_empty(const Square from, const Square to, const game::Position &pos) {
+    const auto inc = delta_inc_line(to - from);
+    ASSERT(inc != INC_NONE);
+    Square sq;
+    for (sq = from + inc; sq != to; sq += inc) {
+        if (pos.square(sq) != COLOR_EMPTY) {
+            return false;
+        }
+    }
+    ASSERT(sq == to);
+    return true;
+}
+
+inline bool pseudo_attack(const ColorPiece p, const Square delta) {
+    return (delta_flag_all(delta) & p) != 0;
+}
+
+inline bool pseudo_slider_attack(const ColorPiece p, const Square delta) {
+    return (delta_flag_slider(delta) & p) != 0;
+}
+
+inline bool slider_attack(const Square from ,const Square to, const ColorPiece cp, const game::Position &pos) {
+    const auto delta = to - from;
+    return (pseudo_attack(cp, delta) && line_is_empty(from, to, pos));
+}
+
 class Checker {
 public:
     int num;
@@ -321,7 +364,7 @@ inline bool is_attacked(const game::Position &pos, const Square sq, const Color 
         REP(index, size) {\
             const auto from = pos.piece_list(turn, p, index);\
             const auto cp = color_piece(p, turn);\
-            const auto inc = delta_inc_line(sq - from);\
+            const auto inc = attack::delta_inc_line(sq - from);\
             if (inc == INC_NONE) { continue; }\
             const auto dir = inc_to_dir(inc);\
             const auto neighbor_sq = pos.neighbor(from, dir);\
@@ -335,7 +378,7 @@ inline bool is_attacked(const game::Position &pos, const Square sq, const Color 
             Tee<<"nei_delta:"<<neighbor_delta<<std::endl;\
             Tee<<"preudo_attack:"<<pseudo_slider_attack(cp, neighbor_delta)<<std::endl;\
             Tee<<"delta_flag:"<<delta_flag_slider(neighbor_delta)<<std::endl;*/\
-            if (pseudo_slider_attack(cp, neighbor_delta) && (std::abs(sq - from) <= std::abs(neighbor_delta))) {\
+            if (attack::pseudo_slider_attack(cp, neighbor_delta) && (std::abs(sq - from) <= std::abs(neighbor_delta))) {\
                 return true;\
             }\
         }\
@@ -355,6 +398,7 @@ inline bool is_attacked(const game::Position &pos, const Square sq, const Color 
     });
     return false;
 }
+
 inline bool in_checked(const game::Position &pos) {
     return is_attacked(pos,pos.king_sq(pos.turn()),change_turn(pos.turn()));
 }
@@ -366,7 +410,7 @@ inline bool can_move(const ColorPiece p, const int move_flag) {
 inline bool is_pinned(const Square sq, const Color me, const game::Position &pos) {
     const auto king_sq = pos.king_sq(me);
     // 玉とsqの間に何もないか？
-    const auto inc_king = delta_inc_line(king_sq - sq);
+    const auto inc_king = attack::delta_inc_line(king_sq - sq);
     if (inc_king == INC_NONE) { return false; }
     const auto dir_king = inc_to_dir(inc_king);
     const auto pseudo_king_sq = pos.neighbor(sq,dir_king);
@@ -378,13 +422,13 @@ inline bool is_pinned(const Square sq, const Color me, const game::Position &pos
     const auto slider_sq = pos.neighbor(sq, dir_slider);
     const auto slider_cp = pos.square(slider_sq);
     const auto opp = change_turn(me);
-    return color_is_eq(opp,slider_cp) && pseudo_slider_attack(slider_cp, sq - slider_sq);
+    return color_is_eq(opp,slider_cp) && attack::pseudo_slider_attack(slider_cp, sq - slider_sq);
 }
 
 inline bool is_discover(const Square from, const Square to, const Color turn, const game::Position &pos) {
     const auto king_sq = pos.king_sq(turn);
     if (is_pinned(from,turn, pos)) {
-        return delta_inc_line(king_sq - from) != delta_inc_line(king_sq - to);
+        return attack::delta_inc_line(king_sq - from) != attack::delta_inc_line(king_sq - to);
     }
     return false;
 }
@@ -477,7 +521,7 @@ bool is_mate_with_pawn_drop(const Square drop_sq, game::Position &pos) {
         if (from == king_sq) {continue;}
         const auto from_cp = pos.square(from);
         if (color_is_eq(opp, from_cp) 
-        && pseudo_attack(from_cp, drop_sq - from) 
+        && attack::pseudo_attack(from_cp, drop_sq - from) 
         && !attack::is_discover(from, drop_sq, opp, pos)) {
             pos.prev_quick(drop_sq);
             return false;

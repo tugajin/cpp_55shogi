@@ -16,6 +16,11 @@ public:
     }
     void init() {
         this->curr = this->moves;
+#if DEBUG
+    REP(i,MAX_LIST_SIZE) {
+        moves[i] = MOVE_NONE;
+    }
+#endif
     }
     int len() const {
         return this->curr - this->moves;

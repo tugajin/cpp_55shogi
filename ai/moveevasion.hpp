@@ -21,14 +21,14 @@ template<bool is_exists = false, bool add_drops> bool add_moves_to(game::Positio
                 /*Tee<<"pc:"<<piece_str(pc)<<std::endl;*/\
                 switch(pc) {\
                     case PAWN: {\
-                        if (pseudo_attack(cp,to-from) && !attack::is_pinned(from,me,pos)) {\
+                        if (attack::pseudo_attack(cp,to-from) && !attack::is_pinned(from,me,pos)) {\
                             if (is_exists) { return true; }\
                             ml.add(move(from,to,(sq_is_prom(to, me))));\
                         }\
                         break;\
                     }\
                     case SILVER:{\
-                        if (pseudo_attack(cp,to-from) && !attack::is_pinned(from,me,pos)) {\
+                        if (attack::pseudo_attack(cp,to-from) && !attack::is_pinned(from,me,pos)) {\
                             if (is_exists) { return true; }\
                             if ((sq_is_prom(to, me) || sq_is_prom(from, me))) { ml.add(move(from,to, true)); }\
                             ml.add(move(from,to));\
@@ -38,7 +38,7 @@ template<bool is_exists = false, bool add_drops> bool add_moves_to(game::Positio
                     case GOLD:\
                     case PPAWN:\
                     case PSILVER:{\
-                        if (pseudo_attack(cp,to-from) && !attack::is_pinned(from,me,pos)) {\
+                        if (attack::pseudo_attack(cp,to-from) && !attack::is_pinned(from,me,pos)) {\
                             if (is_exists) { return true; }\
                             ml.add(move(from,to));\
                         }\
@@ -46,7 +46,7 @@ template<bool is_exists = false, bool add_drops> bool add_moves_to(game::Positio
                     }\
                     case BISHOP:\
                     case ROOK: {\
-                        if (pseudo_attack(cp,to-from) && !attack::is_pinned(from,me,pos)) {\
+                        if (attack::pseudo_attack(cp,to-from) && !attack::is_pinned(from,me,pos)) {\
                             if (is_exists) { return true; }\
                             ml.add(move(from,to,(sq_is_prom(to, me) || sq_is_prom(from, me))));\
                         }\
@@ -54,7 +54,7 @@ template<bool is_exists = false, bool add_drops> bool add_moves_to(game::Positio
                     }\
                     case PBISHOP:\
                     case PROOK:{\
-                        if (pseudo_attack(cp,to-from) && !attack::is_pinned(from,me,pos)) {\
+                        if (attack::pseudo_attack(cp,to-from) && !attack::is_pinned(from,me,pos)) {\
                             if (is_exists) { return true; }\
                             ml.add(move(from,to));\
                         }\
