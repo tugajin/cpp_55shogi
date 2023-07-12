@@ -1,17 +1,103 @@
 #ifndef __MOVELEGAL_HPP__
 #define __MOVELEGAL_HPP__
 
+#include <unordered_map>
 #include "game.hpp"
 #include "movelist.hpp"
 #include "movegen.hpp"
 #include "movedrop.hpp"
-#include <unordered_map>
 #include "moveevasion.hpp"
 #include "movecheck.hpp"
 //#include "movecapture.hpp"
-//#include "matesearch.hpp"
+#include "matesearch.hpp"
 
 namespace gen {
+
+bool move_is_pseudo_legal(const Move mv, game::Position &pos) {
+    const auto me = pos.turn();
+    if (move_is_drop(mv)) {
+        const auto piece = move_piece(mv);
+        const auto to = move_to(mv);
+        const auto hand = pos.hand(me);
+        if (!has_piece(hand, piece)) {
+            return false;
+        }
+        if (pos.square(to) != COLOR_EMPTY) {
+            return false;
+        }
+        if (piece == PSILVER || piece == PPAWN || piece == PROOK || piece == PBISHOP) {
+            return false;
+        }
+        if (piece == PAWN) {
+            if (pos.exists_pawn(me,sq_file(to))) {
+                return false;
+            }
+            const auto rank_first = (me == BLACK) ? RANK_1 : RANK_5;
+            if (sq_rank(to) == rank_first) {
+                return false;
+            }
+            if (gen::is_mate_with_pawn_drop(to,pos)) {
+                return false;
+            }
+        }
+    } else {
+        const auto from = move_from(mv);
+        const auto to = move_to(mv);
+        const auto prom = move_is_prom(mv);
+        const auto delta = to - from;
+        const auto inc = attack::delta_inc_line(delta);
+        if (inc == INC_NONE) {
+            return false;
+        }
+        if (!sq_is_ok(from)) {
+            return false;
+        }
+        if (!sq_is_ok(to)) {
+            return false;
+        }
+        const auto from_cp = pos.square(from);
+        const auto rank_first = (me == BLACK) ? RANK_1 : RANK_5;
+        if (!can_prom(from_cp) && prom) {
+            return false;
+        }
+        if (prom) {
+            if (sq_rank(to) != rank_first && sq_rank(from) != rank_first) {
+                return false;
+            }
+        }
+        const auto from_piece = to_piece(from_cp);
+        if (from_piece == PAWN) {
+            if (!prom) {
+                if (sq_rank(to) == rank_first) {
+                    return false;
+                }
+            }
+        }
+        if (!piece_is_slider(from_piece)) {
+            if (delta != INC_DOWN
+            && delta != INC_UP
+            && delta != INC_LEFT
+            && delta != INC_RIGHT
+            && delta != INC_LEFTUP
+            && delta != INC_LEFTDOWN
+            && delta != INC_RIGHTUP
+            && delta != INC_RIGHTDOWN) {
+                return false;
+            }
+        } else {
+            for(auto tmp_to = from + inc; tmp_to != to; tmp_to += inc) {
+                if (pos.square(tmp_to) != COLOR_EMPTY) {
+                    return false;
+                }
+            }
+        }
+        const auto to_cp = pos.square(to);
+        if (color_is_eq(me,to_cp)) {
+            return false;
+        }
+    }
+    return true;
+}
 
 template<bool is_exists = false> bool legal_moves(game::Position &pos, movelist::MoveList &ml) {
     ASSERT2(pos.is_ok(),{
@@ -25,7 +111,7 @@ template<bool is_exists = false> bool legal_moves(game::Position &pos, movelist:
     auto result = false;
     if (attack::in_checked(pos)) {
         result = evasion_moves<is_exists>(pos, ml);
-#if 1
+#if DEBUG
     if (!is_exists) {
         movelist::MoveList all_ml;
         pos_moves<false,false>(pos, all_ml);
@@ -57,7 +143,7 @@ template<bool is_exists = false> bool legal_moves(game::Position &pos, movelist:
     } else {
         result = pos_moves<is_exists,true>(pos, ml);
         result |= drop_moves<is_exists>(pos, ml);
-#if 1
+#if DEBUG
         if (!is_exists) {
             movelist::MoveList all_ml;
             pos_moves<false,false>(pos, all_ml);
@@ -88,6 +174,16 @@ template<bool is_exists = false> bool legal_moves(game::Position &pos, movelist:
         }
 #endif
     }
+#if DEBUG
+    REP(i, ml.len()) {
+        if (!move_is_pseudo_legal(ml[i],pos)) {
+            Tee<<"move is pseudo legal error\n";
+            Tee<<pos<<std::endl;
+            Tee<<move_str(ml[i])<<std::endl;
+            ASSERT(false);
+        }
+    }
+#endif
     return result;
 }
 
@@ -97,7 +193,7 @@ void check_moves(game::Position &pos, movelist::MoveList &ml) {
     });
     drop_check_moves(pos,ml);
     pos_check_moves(pos,ml);
-#if 1
+#if DEBUG 
     auto pos2 = pos;
     movelist::MoveList all_ml;
     legal_moves(pos2,all_ml);
@@ -153,6 +249,8 @@ bool test_gen2(std::string sfen, const int num, const bool check = false) {
 }
 
 void test_gen() {
+    ASSERT(test_gen2("1+RKss/p4/3R1/bPg2/2k2 b bg - 5",1,true));
+    ASSERT(test_gen2("5/2gkp/Pb2R/1S3/KG3 b Rsb - 3",7,true));
     ASSERT(test_gen2("pb2k/b3r/5/KS1Sr/4g w pg - 52",5,true));
     ASSERT(test_gen2("4g/2g2/p1SBk/Sr1R1/4K b Pb - 9",2,true));
     ASSERT(test_gen2("r1sgk/b3R/1B3/P4/KGS2 w P - 4",2));
@@ -188,7 +286,7 @@ void test_gen() {
 }
 
 void test_gen3() {
-#if 1
+#if DEBUG
     std::unordered_map<Key, int> key_dict;
     uint64 mate_num = 0;
     uint64 draw_num = 0;
@@ -221,9 +319,10 @@ void test_gen3() {
                 mate_num++;
                 break;
             }
-            if (!attack::in_checked(pos)) {
-                auto ml2 = movelist::MoveList();
-                check_moves(pos,ml2);
+            if (attack::in_checked(pos)) {
+                mate::mated_search(pos,4);
+            } else {
+                mate::mate_search(pos,5);
             }
             auto mv = ml[my_rand(ml.len())];
             //Tee<<move_str(mv)<<std::endl;

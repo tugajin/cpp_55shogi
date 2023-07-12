@@ -731,7 +731,7 @@ Position Position::rotate() const {
 }
 
 void test_common() {
-#if 1
+#if DEBUG
     ASSERT(change_turn(BLACK) == WHITE);
     ASSERT(change_turn(WHITE) == BLACK);
 

@@ -560,6 +560,11 @@ bool is_mate_with_pawn_drop(const Square drop_sq, game::Position &pos) {
 namespace attack {
 inline void test_attack() {
     {
+        auto pos = sfen::sfen("1+RKss/p4/5/bPgG1/4k w br - 80");
+        Tee<<pos<<std::endl;
+        ASSERT(!attack::in_checked(pos));
+    }
+    {
         auto pos = sfen::sfen("2k1p/2Grr/p3B/1S1+s1/K2gb w - 116");
         Tee<<pos<<std::endl;
         ASSERT(attack::is_pinned(SQ_22,WHITE,pos));

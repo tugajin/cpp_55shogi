@@ -7,7 +7,7 @@
 // #include "selfplay.hpp"
 // #include "ubfm.hpp"
 #include "attack.hpp"
-// #include "matesearch.hpp"
+#include "matesearch.hpp"
 #include "hash.hpp"
 // #include "nn.hpp"
 // #include "countreward.hpp"
@@ -50,9 +50,10 @@ int main(int argc, char **argv){
     check_mode();
     attack::init();
     hash::init();
+    gen::test_gen();
+    mate::test_mate();
     attack::test_attack();
     gen::test_gen3();
-    //gen::test_gen3();
     //oracle::g_oracle.load();
     //model::g_gpu_model[0].load_model(0);
     //model::test_oracle_model();

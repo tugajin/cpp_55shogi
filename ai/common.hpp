@@ -435,6 +435,18 @@ inline bool can_prom(const ColorPiece cp) {
         case WHITE_PSILVER:
         case WHITE_PBISHOP:
         case WHITE_PROOK:
+            return false;
+        default:
+            return true;
+    }
+}
+
+inline bool piece_is_slider(const Piece pc) {
+    switch (pc) {
+        case BISHOP:
+        case ROOK:
+        case PBISHOP:
+        case PROOK:
             return true;
         default:
             return false;

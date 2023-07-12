@@ -69,7 +69,16 @@ void pos_check_moves(game::Position &pos, movelist::MoveList &ml) {
                 } \
             }\
 }while(false)
-
+#define ADD_MOVE2(dir) do {\
+            const auto to = from + (dir);\
+            if (attack::can_move(pos.square(to), move_flag)) {\
+                if (attack::is_discover(from,to,turn,pos)) { continue; }\
+                const auto cp = pos.square(from);\
+                if (attack::slider_attack(to, opp_king_sq, cp, pos) || attack::is_discover(from, to, opp, pos)) { \
+                    ml.add(move(from, to));\
+                } \
+            }\
+}while(false)
     {
         const auto size = pos.piece_list_size(turn, SILVER);
         REP(index, size) {
@@ -261,10 +270,10 @@ void pos_check_moves(game::Position &pos, movelist::MoveList &ml) {
             ADD_MOVE_SLIER(3);
             ADD_MOVE_SLIER(5);
             ADD_MOVE_SLIER(7);
-            ADD_MOVE(INC_UP);
-            ADD_MOVE(INC_DOWN);
-            ADD_MOVE(INC_LEFT);
-            ADD_MOVE(INC_RIGHT);
+            ADD_MOVE2(INC_UP);
+            ADD_MOVE2(INC_DOWN);
+            ADD_MOVE2(INC_LEFT);
+            ADD_MOVE2(INC_RIGHT);
         }
     }
 
@@ -276,16 +285,17 @@ void pos_check_moves(game::Position &pos, movelist::MoveList &ml) {
             ADD_MOVE_SLIER(2);
             ADD_MOVE_SLIER(4);
             ADD_MOVE_SLIER(6);
-            ADD_MOVE(INC_LEFTUP);
-            ADD_MOVE(INC_LEFTDOWN);
-            ADD_MOVE(INC_RIGHTUP);
-            ADD_MOVE(INC_RIGHTDOWN);
+            ADD_MOVE2(INC_LEFTUP);
+            ADD_MOVE2(INC_LEFTDOWN);
+            ADD_MOVE2(INC_RIGHTUP);
+            ADD_MOVE2(INC_RIGHTDOWN);
         }
     }
 
 #undef ADD_MOVE_SLIER_PROM
 #undef ADD_MOVE_SLIER
 #undef ADD_MOVE
+#undef ADD_MOVE2
     
 }
 
@@ -321,10 +331,6 @@ void drop_check_moves(game::Position &pos, movelist::MoveList &ml) {
             for (to += inc; pos.square(to) == COLOR_EMPTY; to+=inc) {
                 ADD_MOVE(ROOK);
             }
-        } else if (pos.square(to) != COLOR_WALL) {
-            for (to += inc; pos.square(to) == COLOR_EMPTY; to+=inc) {
-                ADD_MOVE(ROOK);
-            }        
         }
     }
     {
@@ -339,11 +345,7 @@ void drop_check_moves(game::Position &pos, movelist::MoveList &ml) {
             for (to += inc; pos.square(to) == COLOR_EMPTY; to+=inc) {
                 ADD_MOVE(BISHOP);
             }
-        } else if (pos.square(to) != COLOR_WALL) {
-            for (to += inc; pos.square(to) == COLOR_EMPTY; to+=inc) {
-                ADD_MOVE(BISHOP);
-            }
-        }
+        } 
     }
     {
         const auto inc = INC_LEFT;
@@ -351,10 +353,6 @@ void drop_check_moves(game::Position &pos, movelist::MoveList &ml) {
         if (pos.square(to) == COLOR_EMPTY) {
             ADD_MOVE(GOLD);
             ADD_MOVE(ROOK);
-            for (to += inc; pos.square(to) == COLOR_EMPTY; to+=inc) {
-                ADD_MOVE(ROOK);
-            }
-        } else if (pos.square(to) != COLOR_WALL) {
             for (to += inc; pos.square(to) == COLOR_EMPTY; to+=inc) {
                 ADD_MOVE(ROOK);
             }
@@ -369,10 +367,6 @@ void drop_check_moves(game::Position &pos, movelist::MoveList &ml) {
             if (me == BLACK) {
                 ADD_MOVE(GOLD);
             }
-            for (to += inc; pos.square(to) == COLOR_EMPTY; to+=inc) {
-                ADD_MOVE(BISHOP);
-            }
-        } else if (pos.square(to) != COLOR_WALL) {
             for (to += inc; pos.square(to) == COLOR_EMPTY; to+=inc) {
                 ADD_MOVE(BISHOP);
             }
@@ -391,11 +385,7 @@ void drop_check_moves(game::Position &pos, movelist::MoveList &ml) {
             for (to += inc; pos.square(to) == COLOR_EMPTY; to+=inc) {
                 ADD_MOVE(ROOK);
             }
-        } else if (pos.square(to) != COLOR_WALL) {
-            for (to += inc; pos.square(to) == COLOR_EMPTY; to+=inc) {
-                ADD_MOVE(ROOK);
-            }
-        } 
+        }
     }
     {
         const auto inc = INC_RIGHTDOWN;
@@ -409,11 +399,7 @@ void drop_check_moves(game::Position &pos, movelist::MoveList &ml) {
             for (to += inc; pos.square(to) == COLOR_EMPTY; to+=inc) {
                 ADD_MOVE(BISHOP);
             }
-        } else if (pos.square(to) != COLOR_WALL) {
-            for (to += inc; pos.square(to) == COLOR_EMPTY; to+=inc) {
-                ADD_MOVE(BISHOP);
-            }
-        } 
+        }
     }
     {
         const auto inc = INC_RIGHT;
@@ -421,10 +407,6 @@ void drop_check_moves(game::Position &pos, movelist::MoveList &ml) {
         if (pos.square(to) == COLOR_EMPTY) {
             ADD_MOVE(GOLD);
             ADD_MOVE(ROOK);
-            for (to += inc; pos.square(to) == COLOR_EMPTY; to+=inc) {
-                ADD_MOVE(ROOK);
-            }
-        } else if (pos.square(to) != COLOR_WALL) {
             for (to += inc; pos.square(to) == COLOR_EMPTY; to+=inc) {
                 ADD_MOVE(ROOK);
             }
@@ -442,11 +424,7 @@ void drop_check_moves(game::Position &pos, movelist::MoveList &ml) {
             for (to += inc; pos.square(to) == COLOR_EMPTY; to+=inc) {
                 ADD_MOVE(BISHOP);
             }
-        } else if (pos.square(to) != COLOR_WALL) {
-            for (to += inc; pos.square(to) == COLOR_EMPTY; to+=inc) {
-                ADD_MOVE(BISHOP);
-            }
-        } 
+        }
     }
 #undef ADD_MOVE
 #undef ADD_PAWN
