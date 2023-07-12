@@ -1,0 +1,7 @@
+ai/build/
+learn/__pycache__
+*.log
+learn/data
+learn/count.json
+oracle/build
+*.dat
